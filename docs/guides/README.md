@@ -3,12 +3,14 @@
 ## Getting Started
 
 1. **Install Dependencies**
+
    ```bash
    npm install
    ```
 
 2. **Environment Setup**
    Ensure `.env` contains:
+
    ```env
    DATABASE_URL="postgresql://..."
    JWT_SECRET="secret"
@@ -16,6 +18,7 @@
 
 3. **Database Migration**
    Sync schema with the database:
+
    ```bash
    npx prisma db push
    ```
@@ -26,6 +29,7 @@
    ```
 
 ## Workflow
+
 1. **New Feature**:
    - Create **Validation Schema** using Zod in `src/validations`.
    - Create **Service** method in `src/services`.
@@ -37,6 +41,7 @@
    - Run `npm run format` to auto-format code using Prettier.
 
 ## Testing (Manual)
+
 - Use Postman or Thunder Client.
 - Authenticate via `/v1/auth/login` to get token.
 - Add `Authorization: Bearer <token>` to headers for protected routes.

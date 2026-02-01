@@ -1,9 +1,11 @@
 # System Architecture
 
 ## Overview
+
 The ECQES backend follows a **Layered Architecture** (Controller-Service-Repository) to ensure separation of concerns, scalability, and maintainability.
 
 ## Tech Stack
+
 - **Runtime**: Node.js (v18+)
 - **Framework**: Express.js
 - **Language**: TypeScript (Strict)
@@ -12,17 +14,20 @@ The ECQES backend follows a **Layered Architecture** (Controller-Service-Reposit
 - **Auth**: JWT (JSON Web Tokens)
 
 ## Data Flow
+
 `Request` -> `Middleware (Auth/Validation)` -> `Controller` -> `Service` -> `Prisma Client` -> `Database`
 
 ## Database Schema (Mental Model)
-* **Users**: Can be ADMIN, LECTURER, or STUDENT.
-* **Classes**: Group Students. link Lecturers.
-* **Questions**: Bank of questions (MCQ).
-* **Quizzes**: Collections of questions, assigned to Classes.
-* **QuizAttempts**: Tracks the Student's session of a Quiz.
-* **StudentResponses**: Detailed answers for analytics.
+
+- **Users**: Can be ADMIN, LECTURER, or STUDENT.
+- **Classes**: Group Students. link Lecturers.
+- **Questions**: Bank of questions (MCQ).
+- **Quizzes**: Collections of questions, assigned to Classes.
+- **QuizAttempts**: Tracks the Student's session of a Quiz.
+- **StudentResponses**: Detailed answers for analytics.
 
 ## Folder Structure
+
 ```
 src/
 ├── config/         # Environment variables & Logger config

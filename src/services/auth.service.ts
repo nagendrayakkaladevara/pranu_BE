@@ -5,13 +5,13 @@ import userService from './user.service';
 import { ApiError } from '../middlewares/error';
 
 const loginUserWithEmailAndPassword = async (email: string, password: string) => {
-    const user = await userService.getUserByEmail(email);
-    if (!user || !(await bcrypt.compare(password, user.password))) {
-        throw new ApiError(httpStatus.UNAUTHORIZED, 'Incorrect email or password');
-    }
-    return user;
+  const user = await userService.getUserByEmail(email);
+  if (!user || !(await bcrypt.compare(password, user.password))) {
+    throw new ApiError(httpStatus.UNAUTHORIZED, 'Incorrect email or password');
+  }
+  return user;
 };
 
 export default {
-    loginUserWithEmailAndPassword,
+  loginUserWithEmailAndPassword,
 };
