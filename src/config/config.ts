@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 dotenv.config({ path: path.join(__dirname, '../../.env') });
 
+// Validate environment variables using Zod
 const envSchema = z.object({
   NODE_ENV: z.enum(['production', 'development', 'test']).default('development'),
   PORT: z.coerce.number().default(3000),

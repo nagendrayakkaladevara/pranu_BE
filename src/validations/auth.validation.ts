@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+// Validate registration body
 const register = {
   body: z.object({
     email: z.string().email(),
@@ -9,6 +10,7 @@ const register = {
   }),
 };
 
+// Validate login body
 const login = {
   body: z.object({
     email: z.string().email(),

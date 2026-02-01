@@ -2,6 +2,11 @@ import httpStatus from 'http-status';
 import prisma from '../client';
 import { ApiError } from '../middlewares/error';
 
+/**
+ * Create a question
+ * @param {Object} questionBody
+ * @returns {Promise<Question>}
+ */
 const createQuestion = async (questionBody: any) => {
   const { options, ...questionData } = questionBody;
 
@@ -23,6 +28,12 @@ const createQuestion = async (questionBody: any) => {
   });
 };
 
+/**
+ * Query for questions
+ * @param {Object} filter - Prisma filter
+ * @param {Object} options - Query options
+ * @returns {Promise<Object>}
+ */
 const queryQuestions = async (filter: any, options: any) => {
   const where: any = {};
   if (filter.subject) where.subject = { contains: filter.subject, mode: 'insensitive' };
@@ -50,6 +61,11 @@ const queryQuestions = async (filter: any, options: any) => {
   return { questions, page, limit, totalPages, totalResults };
 };
 
+/**
+ * Get question by id
+ * @param {number} id
+ * @returns {Promise<Question>}
+ */
 const getQuestionById = async (id: number) => {
   return prisma.question.findUnique({
     where: { id },
@@ -59,6 +75,12 @@ const getQuestionById = async (id: number) => {
   });
 };
 
+/**
+ * Update question by id
+ * @param {number} questionId
+ * @param {Object} updateBody
+ * @returns {Promise<Question>}
+ */
 const updateQuestionById = async (questionId: number, updateBody: any) => {
   const question = await getQuestionById(questionId);
   if (!question) {
@@ -103,6 +125,11 @@ const updateQuestionById = async (questionId: number, updateBody: any) => {
   });
 };
 
+/**
+ * Delete question by id
+ * @param {number} questionId
+ * @returns {Promise<Question>}
+ */
 const deleteQuestionById = async (questionId: number) => {
   const question = await getQuestionById(questionId);
   if (!question) {

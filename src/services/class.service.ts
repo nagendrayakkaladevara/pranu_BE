@@ -2,12 +2,23 @@ import httpStatus from 'http-status';
 import prisma from '../client';
 import { ApiError } from '../middlewares/error';
 
+/**
+ * Create a class
+ * @param {Object} classBody
+ * @returns {Promise<Class>}
+ */
 const createClass = async (classBody: any) => {
   return prisma.class.create({
     data: classBody,
   });
 };
 
+/**
+ * Query for classes
+ * @param {Object} filter - Prisma filter
+ * @param {Object} options - Query options
+ * @returns {Promise<Object>}
+ */
 const queryClasses = async (filter: any, options: any) => {
   const where: any = {};
   if (filter.name) where.name = { contains: filter.name, mode: 'insensitive' };
@@ -35,6 +46,11 @@ const queryClasses = async (filter: any, options: any) => {
   return { classes, page, limit, totalPages, totalResults };
 };
 
+/**
+ * Get class by id
+ * @param {number} id
+ * @returns {Promise<Class>}
+ */
 const getClassById = async (id: number) => {
   return prisma.class.findUnique({
     where: { id },
@@ -57,6 +73,12 @@ const getClassById = async (id: number) => {
   });
 };
 
+/**
+ * Update class by id
+ * @param {number} classId
+ * @param {Object} updateBody
+ * @returns {Promise<Class>}
+ */
 const updateClassById = async (classId: number, updateBody: any) => {
   const classData = await getClassById(classId);
   if (!classData) {
@@ -69,6 +91,11 @@ const updateClassById = async (classId: number, updateBody: any) => {
   return updatedClass;
 };
 
+/**
+ * Delete class by id
+ * @param {number} classId
+ * @returns {Promise<Class>}
+ */
 const deleteClassById = async (classId: number) => {
   const classData = await getClassById(classId);
   if (!classData) {

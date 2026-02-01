@@ -4,11 +4,21 @@ import catchAsync from '../utils/catchAsync';
 import questionService from '../services/question.service';
 import { Difficulty } from '@prisma/client';
 
+/**
+ * Create a new question
+ * @param req Request object containing question details
+ * @param res Response object to send created question
+ */
 const createQuestion = catchAsync(async (req: Request, res: Response) => {
   const result = await questionService.createQuestion(req.body);
   res.status(httpStatus.CREATED).send(result);
 });
 
+/**
+ * Get all questions with filters
+ * @param req Request object containing query filters (subject, topic, difficulty, search)
+ * @param res Response object to send list of questions
+ */
 const getQuestions = catchAsync(async (req: Request, res: Response) => {
   const filter = {
     subject: req.query.subject ? String(req.query.subject) : undefined,
@@ -25,6 +35,11 @@ const getQuestions = catchAsync(async (req: Request, res: Response) => {
   res.send(result);
 });
 
+/**
+ * Get question by ID
+ * @param req Request object containing questionId params
+ * @param res Response object to send question details
+ */
 const getQuestion = catchAsync(async (req: Request, res: Response) => {
   const result = await questionService.getQuestionById(Number(req.params.questionId));
   if (!result) {
@@ -34,11 +49,21 @@ const getQuestion = catchAsync(async (req: Request, res: Response) => {
   res.send(result);
 });
 
+/**
+ * Update question by ID
+ * @param req Request object containing questionId params and update body
+ * @param res Response object to send updated question
+ */
 const updateQuestion = catchAsync(async (req: Request, res: Response) => {
   const result = await questionService.updateQuestionById(Number(req.params.questionId), req.body);
   res.send(result);
 });
 
+/**
+ * Delete question by ID
+ * @param req Request object containing questionId params
+ * @param res Response object (No Content)
+ */
 const deleteQuestion = catchAsync(async (req: Request, res: Response) => {
   await questionService.deleteQuestionById(Number(req.params.questionId));
   res.status(httpStatus.NO_CONTENT).send();

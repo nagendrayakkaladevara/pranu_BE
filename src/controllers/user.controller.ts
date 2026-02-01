@@ -22,6 +22,11 @@ const getUsers = catchAsync(async (req: Request, res: Response) => {
   res.send(result);
 });
 
+/**
+ * Get a single user by ID
+ * @param req Request object containing userId params
+ * @param res Response object to send user details
+ */
 const getUser = catchAsync(async (req: Request, res: Response) => {
   const user = await userService.getUserById(Number(req.params.userId));
   if (!user) {
@@ -31,11 +36,21 @@ const getUser = catchAsync(async (req: Request, res: Response) => {
   res.send(user);
 });
 
+/**
+ * Update user details by ID
+ * @param req Request object containing userId params and update body
+ * @param res Response object to send updated user
+ */
 const updateUser = catchAsync(async (req: Request, res: Response) => {
   const user = await userService.updateUserById(Number(req.params.userId), req.body);
   res.send(user);
 });
 
+/**
+ * Delete user by ID
+ * @param req Request object containing userId params
+ * @param res Response object (No Content)
+ */
 const deleteUser = catchAsync(async (req: Request, res: Response) => {
   await userService.deleteUserById(Number(req.params.userId));
   res.status(httpStatus.NO_CONTENT).send();

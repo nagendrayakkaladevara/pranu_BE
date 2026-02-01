@@ -6,6 +6,7 @@ const optionSchema = z.object({
   isCorrect: z.boolean(),
 });
 
+// Validate create question body
 const createQuestion = {
   body: z.object({
     text: z.string().min(1),
@@ -18,6 +19,7 @@ const createQuestion = {
   }),
 };
 
+// Validate get questions query
 const getQuestions = {
   query: z.object({
     subject: z.string().optional(),
@@ -30,12 +32,14 @@ const getQuestions = {
   }),
 };
 
+// Validate get question params
 const getQuestion = {
   params: z.object({
     questionId: z.coerce.number(),
   }),
 };
 
+// Validate update question params and body
 const updateQuestion = {
   params: z.object({
     questionId: z.coerce.number(),

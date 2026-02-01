@@ -3,6 +3,11 @@ import prisma from '../client';
 import { ApiError } from '../middlewares/error';
 import { AttemptStatus } from '@prisma/client';
 
+/**
+ * Get quiz results and statistics
+ * @param {number} quizId
+ * @returns {Promise<Object>}
+ */
 const getQuizResults = async (quizId: number) => {
   const quiz = await prisma.quiz.findUnique({
     where: { id: quizId },
@@ -59,6 +64,11 @@ const getQuizResults = async (quizId: number) => {
   };
 };
 
+/**
+ * Get student statistics
+ * @param {number} studentId
+ * @returns {Promise<Object>}
+ */
 const getStudentStats = async (studentId: number) => {
   const student = await prisma.user.findUnique({
     where: { id: studentId },

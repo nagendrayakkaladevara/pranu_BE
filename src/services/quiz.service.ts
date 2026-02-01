@@ -3,6 +3,12 @@ import prisma from '../client';
 import { ApiError } from '../middlewares/error';
 import { QuizStatus, User } from '@prisma/client';
 
+/**
+ * Create a quiz
+ * @param {Object} quizBody
+ * @param {User} user
+ * @returns {Promise<Quiz>}
+ */
 const createQuiz = async (quizBody: any, user: User) => {
   return prisma.quiz.create({
     data: {
@@ -12,6 +18,12 @@ const createQuiz = async (quizBody: any, user: User) => {
   });
 };
 
+/**
+ * Query for quizzes
+ * @param {Object} filter - Prisma filter
+ * @param {Object} options - Query options
+ * @returns {Promise<Object>}
+ */
 const queryQuizzes = async (filter: any, options: any) => {
   const where: any = {};
   if (filter.title) where.title = { contains: filter.title, mode: 'insensitive' };
@@ -40,6 +52,11 @@ const queryQuizzes = async (filter: any, options: any) => {
   return { quizzes, page, limit, totalPages, totalResults };
 };
 
+/**
+ * Get quiz by id
+ * @param {number} id
+ * @returns {Promise<Quiz>}
+ */
 const getQuizById = async (id: number) => {
   return prisma.quiz.findUnique({
     where: { id },
@@ -58,6 +75,12 @@ const getQuizById = async (id: number) => {
   });
 };
 
+/**
+ * Update quiz by id
+ * @param {number} quizId
+ * @param {Object} updateBody
+ * @returns {Promise<Quiz>}
+ */
 const updateQuizById = async (quizId: number, updateBody: any) => {
   const quiz = await getQuizById(quizId);
   if (!quiz) {
@@ -78,6 +101,11 @@ const updateQuizById = async (quizId: number, updateBody: any) => {
   return updatedQuiz;
 };
 
+/**
+ * Delete quiz by id
+ * @param {number} quizId
+ * @returns {Promise<Quiz>}
+ */
 const deleteQuizById = async (quizId: number) => {
   const quiz = await getQuizById(quizId);
   if (!quiz) {
@@ -87,6 +115,12 @@ const deleteQuizById = async (quizId: number) => {
   return quiz;
 };
 
+/**
+ * Add questions to quiz
+ * @param {number} quizId
+ * @param {number[]} questionIds
+ * @returns {Promise<Quiz>}
+ */
 const addQuestionsToQuiz = async (quizId: number, questionIds: number[]) => {
   const quiz = await getQuizById(quizId);
   if (!quiz) {
@@ -116,6 +150,12 @@ const addQuestionsToQuiz = async (quizId: number, questionIds: number[]) => {
   return getQuizById(quizId);
 };
 
+/**
+ * Publish quiz
+ * @param {number} quizId
+ * @param {number[]} classIds
+ * @returns {Promise<Quiz>}
+ */
 const publishQuiz = async (quizId: number, classIds: number[]) => {
   const quiz = await getQuizById(quizId);
   if (!quiz) {

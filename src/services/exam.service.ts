@@ -3,6 +3,11 @@ import prisma from '../client';
 import { ApiError } from '../middlewares/error';
 import { AttemptStatus, QuizStatus } from '@prisma/client';
 
+/**
+ * List available quizzes for student
+ * @param {number} studentId
+ * @returns {Promise<Quiz[]>}
+ */
 const listAvailableQuizzes = async (studentId: number) => {
   // 1. Get classes student belongs to
   const studentClasses = await prisma.classStudent.findMany({
@@ -33,6 +38,12 @@ const listAvailableQuizzes = async (studentId: number) => {
   });
 };
 
+/**
+ * Start quiz attempt
+ * @param {number} quizId
+ * @param {number} studentId
+ * @returns {Promise<Object>}
+ */
 const startAttempt = async (quizId: number, studentId: number) => {
   const quiz = await prisma.quiz.findUnique({
     where: { id: quizId },
@@ -106,6 +117,13 @@ const startAttempt = async (quizId: number, studentId: number) => {
   return { attempt, questions };
 };
 
+/**
+ * Submit quiz attempt
+ * @param {number} attemptId
+ * @param {number} studentId
+ * @param {Object[]} responses
+ * @returns {Promise<Object>}
+ */
 const submitAttempt = async (attemptId: number, studentId: number, responses: any[]) => {
   const attempt = await prisma.quizAttempt.findUnique({
     where: { id: attemptId },

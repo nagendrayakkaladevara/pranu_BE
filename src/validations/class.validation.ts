@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+// Validate create class body
 const createClass = {
   body: z.object({
     name: z.string().min(1),
@@ -9,6 +10,7 @@ const createClass = {
   }),
 };
 
+// Validate get classes query
 const getClasses = {
   query: z.object({
     name: z.string().optional(),
@@ -19,12 +21,14 @@ const getClasses = {
   }),
 };
 
+// Validate get class params
 const getClass = {
   params: z.object({
     classId: z.coerce.number(),
   }),
 };
 
+// Validate update class params and body
 const updateClass = {
   params: z.object({
     classId: z.coerce.number(),
@@ -41,6 +45,7 @@ const updateClass = {
     }),
 };
 
+// Validate delete class params
 const deleteClass = {
   params: z.object({
     classId: z.coerce.number(),

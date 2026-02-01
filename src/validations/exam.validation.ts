@@ -1,11 +1,13 @@
 import { z } from 'zod';
 
+// Validate start attempt params
 const startAttempt = {
   params: z.object({
     quizId: z.coerce.number(),
   }),
 };
 
+// Validate submit attempt params and body
 const submitAttempt = {
   params: z.object({
     attemptId: z.coerce.number(),

@@ -15,6 +15,10 @@ declare global {
   }
 }
 
+/**
+ * Auth middleware to handle JWT authentication and role-based access control
+ * @param requiredRoles List of roles allowed to access the route
+ */
 const auth =
   (...requiredRoles: Role[]) =>
   async (req: Request, res: Response, next: NextFunction) => {

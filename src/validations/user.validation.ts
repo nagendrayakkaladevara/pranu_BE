@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { Role } from '@prisma/client';
 
+// Validate create user body
 const createUser = {
   body: z.object({
     email: z.string().email(),
@@ -10,6 +11,7 @@ const createUser = {
   }),
 };
 
+// Validate get users query
 const getUsers = {
   query: z.object({
     name: z.string().optional(),
@@ -20,12 +22,14 @@ const getUsers = {
   }),
 };
 
+// Validate get user by ID params
 const getUser = {
   params: z.object({
     userId: z.coerce.number(),
   }),
 };
 
+// Validate update user params and body
 const updateUser = {
   params: z.object({
     userId: z.coerce.number(),
@@ -43,6 +47,7 @@ const updateUser = {
     }),
 };
 
+// Validate delete user params
 const deleteUser = {
   params: z.object({
     userId: z.coerce.number(),

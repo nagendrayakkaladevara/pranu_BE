@@ -4,11 +4,21 @@ import catchAsync from '../utils/catchAsync';
 import quizService from '../services/quiz.service';
 import { QuizStatus } from '@prisma/client';
 
+/**
+ * Create a new quiz
+ * @param req Request object containing quiz details
+ * @param res Response object to send created quiz
+ */
 const createQuiz = catchAsync(async (req: Request, res: Response) => {
   const result = await quizService.createQuiz(req.body, req.user); // req.user set by auth middleware
   res.status(httpStatus.CREATED).send(result);
 });
 
+/**
+ * Get all quizzes with filters
+ * @param req Request object containing query filters
+ * @param res Response object to send list of quizzes
+ */
 const getQuizzes = catchAsync(async (req: Request, res: Response) => {
   const filter = {
     title: req.query.title ? String(req.query.title) : undefined,
@@ -23,6 +33,11 @@ const getQuizzes = catchAsync(async (req: Request, res: Response) => {
   res.send(result);
 });
 
+/**
+ * Get quiz details by ID
+ * @param req Request object containing quizId params
+ * @param res Response object to send quiz details
+ */
 const getQuiz = catchAsync(async (req: Request, res: Response) => {
   const result = await quizService.getQuizById(Number(req.params.quizId));
   if (!result) {
@@ -32,16 +47,31 @@ const getQuiz = catchAsync(async (req: Request, res: Response) => {
   res.send(result);
 });
 
+/**
+ * Update quiz details by ID
+ * @param req Request object containing quizId params and update body
+ * @param res Response object to send updated quiz
+ */
 const updateQuiz = catchAsync(async (req: Request, res: Response) => {
   const result = await quizService.updateQuizById(Number(req.params.quizId), req.body);
   res.send(result);
 });
 
+/**
+ * Delete quiz by ID
+ * @param req Request object containing quizId params
+ * @param res Response object (No Content)
+ */
 const deleteQuiz = catchAsync(async (req: Request, res: Response) => {
   await quizService.deleteQuizById(Number(req.params.quizId));
   res.status(httpStatus.NO_CONTENT).send();
 });
 
+/**
+ * Add questions to a quiz
+ * @param req Request object containing quizId params and list of question IDs
+ * @param res Response object to send updated quiz
+ */
 const addQuestions = catchAsync(async (req: Request, res: Response) => {
   const result = await quizService.addQuestionsToQuiz(
     Number(req.params.quizId),
@@ -50,6 +80,11 @@ const addQuestions = catchAsync(async (req: Request, res: Response) => {
   res.send(result);
 });
 
+/**
+ * Publish quiz to classes
+ * @param req Request object containing quizId params and list of class IDs
+ * @param res Response object to send updated quiz
+ */
 const publishQuiz = catchAsync(async (req: Request, res: Response) => {
   const result = await quizService.publishQuiz(Number(req.params.quizId), req.body.classIds);
   res.send(result);

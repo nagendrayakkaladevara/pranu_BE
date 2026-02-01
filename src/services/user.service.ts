@@ -4,6 +4,11 @@ import prisma from '../client';
 import { ApiError } from '../middlewares/error';
 import { Role, User } from '@prisma/client';
 
+/**
+ * Create a user
+ * @param {Object} userBody
+ * @returns {Promise<User>}
+ */
 const createUser = async (userBody: any) => {
   if (await isEmailTaken(userBody.email)) {
     throw new ApiError(httpStatus.BAD_REQUEST, 'Email already taken');
@@ -39,6 +44,11 @@ const getUserByEmail = async (email: string) => {
   });
 };
 
+/**
+ * Get user by id
+ * @param {ObjectId} id
+ * @returns {Promise<User>}
+ */
 const getUserById = async (id: number) => {
   return prisma.user.findUnique({
     where: { id },
@@ -49,6 +59,15 @@ const apiCreateUser = async (userBody: any) => {
   return createUser(userBody);
 };
 
+/**
+ * Query for users
+ * @param {Object} filter - Prisma filter
+ * @param {Object} options - Query options
+ * @param {string} [options.sortBy] - Sort option in the format: sortField:(desc|asc)
+ * @param {number} [options.limit] - Maximum number of results per page (default = 10)
+ * @param {number} [options.page] - Current page (default = 1)
+ * @returns {Promise<Object>}
+ */
 const queryUsers = async (filter: any, options: any) => {
   // Basic filter implementation
   const where: any = {};
@@ -74,6 +93,12 @@ const queryUsers = async (filter: any, options: any) => {
   return { users, page, limit, totalPages, totalResults };
 };
 
+/**
+ * Update user by id
+ * @param {ObjectId} userId
+ * @param {Object} updateBody
+ * @returns {Promise<User>}
+ */
 const updateUserById = async (userId: number, updateBody: any) => {
   const user = await getUserById(userId);
   if (!user) {
@@ -95,6 +120,11 @@ const updateUserById = async (userId: number, updateBody: any) => {
   return updatedUser;
 };
 
+/**
+ * Delete user by id
+ * @param {ObjectId} userId
+ * @returns {Promise<User>}
+ */
 const deleteUserById = async (userId: number) => {
   const user = await getUserById(userId);
   if (!user) {

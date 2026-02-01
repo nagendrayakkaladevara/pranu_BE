@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+// Validate create quiz body
 const createQuiz = {
   body: z.object({
     title: z.string().min(1),
@@ -13,6 +14,7 @@ const createQuiz = {
   }),
 };
 
+// Validate get quizzes query
 const getQuizzes = {
   query: z.object({
     title: z.string().optional(),
@@ -23,12 +25,14 @@ const getQuizzes = {
   }),
 };
 
+// Validate get quiz params
 const getQuiz = {
   params: z.object({
     quizId: z.coerce.number(),
   }),
 };
 
+// Validate update quiz params and body
 const updateQuiz = {
   params: z.object({
     quizId: z.coerce.number(),
@@ -55,6 +59,7 @@ const deleteQuiz = {
   }),
 };
 
+// Validate add questions to quiz params and body
 const addQuestions = {
   params: z.object({
     quizId: z.coerce.number(),
@@ -64,6 +69,7 @@ const addQuestions = {
   }),
 };
 
+// Validate publish quiz params and body
 const publishQuiz = {
   params: z.object({
     quizId: z.coerce.number(),
