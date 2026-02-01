@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,18 +7,181 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role {
+  ADMIN
+  LECTURER
+  STUDENT
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum QuestionType {
+  MCQ
+  // SUBJECTIVE - Future scope
+}
+
+enum QuizStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum AttemptStatus {
+  STARTED
+  SUBMITTED
+  EXPIRED
+}
+
 model User {
   id        Int      @id @default(autoincrement())
   email     String   @unique
-  name      String?
   password  String
+  name      String
   role      Role     @default(STUDENT)
+  isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // Relations
+  studentClasses  ClassStudent[]
+  lecturerClasses ClassLecturer[]
+  createdQuizzes  Quiz[]           @relation("CreatedQuizzes")
+  examAttempts    QuizAttempt[]
 }
 
-enum Role {
-  LECTURER
-  ADMIN
-  STUDENT
+model Class {
+  id           Int      @id @default(autoincrement())
+  name         String   // e.g., "CSE-3A"
+  department   String   // e.g., "Computer Science"
+  academicYear String   // e.g., "2023-2024"
+  semester     Int      // e.g., 5
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  students  ClassStudent[]
+  lecturers ClassLecturer[]
+  quizzes   QuizClass[]
+}
+
+// Pivot table for Student <-> Class (Many-to-Many)
+model ClassStudent {
+  classId   Int
+  studentId Int
+  class     Class @relation(fields: [classId], references: [id])
+  student   User  @relation(fields: [studentId], references: [id])
+
+  @@id([classId, studentId])
+}
+
+// Pivot table for Lecturer <-> Class (Many-to-Many)
+model ClassLecturer {
+  classId    Int
+  lecturerId Int
+  class      Class @relation(fields: [classId], references: [id])
+  lecturer   User  @relation(fields: [lecturerId], references: [id])
+
+  @@id([classId, lecturerId])
+}
+
+model Question {
+  id          Int          @id @default(autoincrement())
+  text        String
+  type        QuestionType @default(MCQ)
+  difficulty  Difficulty   @default(MEDIUM)
+  marks       Int          @default(1)
+  subject     String
+  topic       String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  
+  // Relations
+  options        QuestionOption[]
+  quizzes        QuizQuestion[]
+  studentResponses StudentResponse[]
+}
+
+model QuestionOption {
+  id         Int      @id @default(autoincrement())
+  questionId Int
+  text       String
+  isCorrect  Boolean  @default(false)
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+}
+
+model Quiz {
+  id          Int        @id @default(autoincrement())
+  title       String
+  description String?
+  createdById Int
+  createdBy   User       @relation("CreatedQuizzes", fields: [createdById], references: [id])
+  
+  // Settings
+  durationMinutes Int      @default(60)
+  totalMarks      Int
+  passMarks       Int?
+  shuffleQuestions Boolean @default(false)
+  status          QuizStatus @default(DRAFT)
+  
+  // Scheduling
+  startTime       DateTime?
+  endTime         DateTime?
+  
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  // Relations
+  questions       QuizQuestion[]
+  assignedClasses QuizClass[]
+  attempts        QuizAttempt[]
+}
+
+model QuizClass {
+  quizId  Int
+  classId Int
+  quiz    Quiz  @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  class   Class @relation(fields: [classId], references: [id], onDelete: Cascade)
+
+  @@id([quizId, classId])
+}
+
+model QuizQuestion {
+  quizId     Int
+  questionId Int
+  quiz       Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@id([quizId, questionId])
+}
+
+model QuizAttempt {
+  id        Int           @id @default(autoincrement())
+  quizId    Int
+  studentId Int
+  quiz      Quiz          @relation(fields: [quizId], references: [id])
+  student   User          @relation(fields: [studentId], references: [id])
+  
+  status    AttemptStatus @default(STARTED)
+  score     Float?
+  startTime DateTime      @default(now())
+  endTime   DateTime?
+  
+  responses StudentResponse[]
+}
+
+model StudentResponse {
+  id               Int         @id @default(autoincrement())
+  attemptId        Int
+  questionId       Int
+  selectedOptionId Int?        // Null if skipped (if we allow skipping)
+  
+  attempt          QuizAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question         Question    @relation(fields: [questionId], references: [id])
+  
+  // We might not need relation to Option if we just store ID, but good for integrity
+  // option        QuestionOption? @relation(fields: [selectedOptionId], references: [id])
 }
