@@ -1,10 +1,9 @@
 # Project Documentation
 
-Welcome to the backend documentation. Here you'll find everything you need to understand, develop, and deploy the application.
+Welcome to the backend documentation. Here you'll find everything you need to understand and integrate with the API.
 
 ## Documentation
 
-- [API Endpoints](./api/README.md)
-- [Frontend Integration Guide](./FRONTEND_INTEGRATION.md)
-- [System Architecture](./architecture/README.md)
-- [Development Guide](./guides/README.md)
+- [Frontend API Guide](./FRONTEND_API_GUIDE.md) — Complete API reference for the frontend team
+- [Frontend Integration Guide](./FRONTEND_INTEGRATION.md) — Workflow-based integration guide
+- [Postman Collection](./postman_collection.json) — Import into Postman for testing

@@ -2,6 +2,7 @@ import app from './app';
 import config from './config/config';
 import logger from './config/logger';
 import mongoose from 'mongoose';
+import seedAdmin from './seed';
 
 let server: any;
 
@@ -9,6 +10,7 @@ const startServer = async () => {
     try {
         await mongoose.connect(config.mongoose.url, config.mongoose.options);
         logger.info('Connected to MongoDB');
+        await seedAdmin();
         server = app.listen(config.port, () => {
             logger.info(`Listening to port ${config.port}`);
         });
