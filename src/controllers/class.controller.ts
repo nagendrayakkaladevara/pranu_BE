@@ -38,7 +38,7 @@ const getClasses = catchAsync(async (req: Request, res: Response) => {
  * @param res Response object to send class details
  */
 const getClass = catchAsync(async (req: Request, res: Response) => {
-  const result = await classService.getClassById(Number(req.params.classId));
+  const result = await classService.getClassById(req.params.classId);
   if (!result) {
     res.status(httpStatus.NOT_FOUND).send({ message: 'Class not found' });
     return;
@@ -52,7 +52,7 @@ const getClass = catchAsync(async (req: Request, res: Response) => {
  * @param res Response object to send updated class
  */
 const updateClass = catchAsync(async (req: Request, res: Response) => {
-  const result = await classService.updateClassById(Number(req.params.classId), req.body);
+  const result = await classService.updateClassById(req.params.classId, req.body);
   res.send(result);
 });
 
@@ -62,7 +62,7 @@ const updateClass = catchAsync(async (req: Request, res: Response) => {
  * @param res Response object (No Content)
  */
 const deleteClass = catchAsync(async (req: Request, res: Response) => {
-  await classService.deleteClassById(Number(req.params.classId));
+  await classService.deleteClassById(req.params.classId);
   res.status(httpStatus.NO_CONTENT).send();
 });
 
@@ -73,7 +73,7 @@ const deleteClass = catchAsync(async (req: Request, res: Response) => {
  */
 const assignStudents = catchAsync(async (req: Request, res: Response) => {
   const result = await classService.assignStudentsToClass(
-    Number(req.params.classId),
+    req.params.classId,
     req.body.studentIds,
   );
   res.send(result);
@@ -86,7 +86,7 @@ const assignStudents = catchAsync(async (req: Request, res: Response) => {
  */
 const assignLecturers = catchAsync(async (req: Request, res: Response) => {
   const result = await classService.assignLecturersToClass(
-    Number(req.params.classId),
+    req.params.classId,
     req.body.lecturerIds,
   );
   res.send(result);

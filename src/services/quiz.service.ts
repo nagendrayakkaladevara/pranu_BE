@@ -1,7 +1,10 @@
+
 import httpStatus from 'http-status';
-import prisma from '../client';
+import Quiz, { QuizStatus } from '../models/quiz.model';
+import Question from '../models/question.model';
+import Class from '../models/class.model';
+import { IUser } from '../models/user.model';
 import { ApiError } from '../middlewares/error';
-import { QuizStatus, User } from '@prisma/client';
 
 /**
  * Create a quiz
@@ -9,155 +12,146 @@ import { QuizStatus, User } from '@prisma/client';
  * @param {User} user
  * @returns {Promise<Quiz>}
  */
-const createQuiz = async (quizBody: any, user: User) => {
-  return prisma.quiz.create({
-    data: {
-      ...quizBody,
-      createdById: user.id,
-    },
+const createQuiz = async (quizBody: any, user: IUser) => {
+  return Quiz.create({
+    ...quizBody,
+    createdBy: user.id,
   });
 };
 
 /**
  * Query for quizzes
- * @param {Object} filter - Prisma filter
+ * @param {Object} filter - Filter
  * @param {Object} options - Query options
  * @returns {Promise<Object>}
  */
 const queryQuizzes = async (filter: any, options: any) => {
   const where: any = {};
-  if (filter.title) where.title = { contains: filter.title, mode: 'insensitive' };
+  if (filter.title) where.title = { $regex: filter.title, $options: 'i' };
   if (filter.status) where.status = filter.status;
-  if (filter.createdById) where.createdById = filter.createdById;
+  if (filter.createdBy) where.createdBy = filter.createdBy;
 
   const page = options.page ?? 1;
   const limit = options.limit ?? 10;
   const skip = (page - 1) * limit;
 
-  const quizzes = await prisma.quiz.findMany({
-    where,
-    skip,
-    take: limit,
-    orderBy: options.sortBy ? { [options.sortBy]: 'asc' } : { createdAt: 'desc' },
-    include: {
-      _count: {
-        select: { questions: true, assignedClasses: true },
-      },
-    },
-  });
+  let sort = '-createdAt';
+  if (options.sortBy) {
+    const [field, order] = options.sortBy.split(':');
+    sort = (order === 'desc' ? '-' : '') + field;
+  }
 
-  const totalResults = await prisma.quiz.count({ where });
+  const quizzesDocs = await Quiz.find(where)
+    .sort(sort)
+    .skip(skip)
+    .limit(limit);
+
+  const totalResults = await Quiz.countDocuments(where);
   const totalPages = Math.ceil(totalResults / limit);
+
+  const quizzes = quizzesDocs.map((doc) => {
+    const obj = doc.toJSON();
+    return {
+      ...obj,
+      _count: {
+        questions: doc.questions.length,
+        assignedClasses: doc.assignedClasses.length,
+      },
+    };
+  });
 
   return { quizzes, page, limit, totalPages, totalResults };
 };
 
 /**
  * Get quiz by id
- * @param {number} id
+ * @param {string} id
  * @returns {Promise<Quiz>}
  */
-const getQuizById = async (id: number) => {
-  return prisma.quiz.findUnique({
-    where: { id },
-    include: {
-      questions: {
-        include: {
-          question: true,
-        },
-      },
-      assignedClasses: {
-        include: {
-          class: true,
-        },
-      },
-    },
-  });
+const getQuizById = async (id: string) => {
+  const quiz = await Quiz.findById(id)
+    .populate('questions')
+    .populate('assignedClasses');
+
+  if (!quiz) return null;
+
+  // Transform to match Prisma structure
+  const obj = quiz.toJSON();
+  const questions = (obj.questions as any[]).map((q) => ({ question: q }));
+  const assignedClasses = (obj.assignedClasses as any[]).map((c) => ({ class: c }));
+
+  return { ...obj, questions, assignedClasses };
 };
 
 /**
  * Update quiz by id
- * @param {number} quizId
+ * @param {string} quizId
  * @param {Object} updateBody
  * @returns {Promise<Quiz>}
  */
-const updateQuizById = async (quizId: number, updateBody: any) => {
-  const quiz = await getQuizById(quizId);
+const updateQuizById = async (quizId: string, updateBody: any) => {
+  const quiz = await Quiz.findById(quizId);
   if (!quiz) {
     throw new ApiError(httpStatus.NOT_FOUND, 'Quiz not found');
   }
 
-  // Basic validation for dates
   if (updateBody.startTime && updateBody.endTime) {
     if (new Date(updateBody.startTime) >= new Date(updateBody.endTime)) {
       throw new ApiError(httpStatus.BAD_REQUEST, 'Start time must be before end time');
     }
   }
 
-  const updatedQuiz = await prisma.quiz.update({
-    where: { id: quizId },
-    data: updateBody,
-  });
-  return updatedQuiz;
+  Object.assign(quiz, updateBody);
+  await quiz.save();
+  return quiz;
 };
 
 /**
  * Delete quiz by id
- * @param {number} quizId
+ * @param {string} quizId
  * @returns {Promise<Quiz>}
  */
-const deleteQuizById = async (quizId: number) => {
-  const quiz = await getQuizById(quizId);
+const deleteQuizById = async (quizId: string) => {
+  const quiz = await Quiz.findByIdAndDelete(quizId);
   if (!quiz) {
     throw new ApiError(httpStatus.NOT_FOUND, 'Quiz not found');
   }
-  await prisma.quiz.delete({ where: { id: quizId } });
   return quiz;
 };
 
 /**
  * Add questions to quiz
- * @param {number} quizId
- * @param {number[]} questionIds
+ * @param {string} quizId
+ * @param {string[]} questionIds
  * @returns {Promise<Quiz>}
  */
-const addQuestionsToQuiz = async (quizId: number, questionIds: number[]) => {
-  const quiz = await getQuizById(quizId);
+const addQuestionsToQuiz = async (quizId: string, questionIds: string[]) => {
+  const quiz = await Quiz.findById(quizId);
   if (!quiz) {
     throw new ApiError(httpStatus.NOT_FOUND, 'Quiz not found');
   }
 
-  // Verify questions exist
-  const questions = await prisma.question.findMany({
-    where: { id: { in: questionIds } },
-  });
-
-  if (questions.length !== questionIds.length) {
+  const count = await Question.countDocuments({ _id: { $in: questionIds } });
+  if (count !== questionIds.length) {
     throw new ApiError(httpStatus.BAD_REQUEST, 'One or more questions not found');
   }
 
-  // Add to pivot
-  const data = questionIds.map((qId) => ({
-    quizId,
-    questionId: qId,
-  }));
-
-  await prisma.quizQuestion.createMany({
-    data,
-    skipDuplicates: true,
-  });
+  await Quiz.updateOne(
+    { _id: quizId },
+    { $addToSet: { questions: { $each: questionIds } } }
+  );
 
   return getQuizById(quizId);
 };
 
 /**
  * Publish quiz
- * @param {number} quizId
- * @param {number[]} classIds
+ * @param {string} quizId
+ * @param {string[]} classIds
  * @returns {Promise<Quiz>}
  */
-const publishQuiz = async (quizId: number, classIds: number[]) => {
-  const quiz = await getQuizById(quizId);
+const publishQuiz = async (quizId: string, classIds: string[]) => {
+  const quiz = await Quiz.findById(quizId);
   if (!quiz) {
     throw new ApiError(httpStatus.NOT_FOUND, 'Quiz not found');
   }
@@ -165,7 +159,7 @@ const publishQuiz = async (quizId: number, classIds: number[]) => {
   if (!quiz.startTime || !quiz.endTime) {
     throw new ApiError(
       httpStatus.BAD_REQUEST,
-      'Quiz must have start and end times before publishing',
+      'Quiz must have start and end times before publishing'
     );
   }
 
@@ -173,25 +167,19 @@ const publishQuiz = async (quizId: number, classIds: number[]) => {
     throw new ApiError(httpStatus.BAD_REQUEST, 'Quiz must have questions before publishing');
   }
 
-  // Update status and assign classes in transaction
-  await prisma.$transaction(async (tx) => {
-    // Assign classes
-    const classData = classIds.map((cId) => ({
-      quizId,
-      classId: cId,
-    }));
+  // Update status and assign classes
+  // Mongoose transaction or just sequential updates
+  // Sequential is usually fine if we don't strictly need atomicity across different collections
+  // but if we are updating Quiz only, it is atomic on document level.
+  // Actually we are updating assignedClasses (on Quiz) and status (on Quiz).
 
-    await tx.quizClass.createMany({
-      data: classData,
-      skipDuplicates: true,
-    });
-
-    // Set status
-    await tx.quiz.update({
-      where: { id: quizId },
-      data: { status: QuizStatus.PUBLISHED },
-    });
-  });
+  await Quiz.updateOne(
+    { _id: quizId },
+    {
+      $set: { status: QuizStatus.PUBLISHED },
+      $addToSet: { assignedClasses: { $each: classIds } },
+    }
+  );
 
   return getQuizById(quizId);
 };

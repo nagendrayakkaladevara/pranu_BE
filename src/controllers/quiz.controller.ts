@@ -2,7 +2,7 @@ import httpStatus from 'http-status';
 import { Request, Response } from 'express';
 import catchAsync from '../utils/catchAsync';
 import quizService from '../services/quiz.service';
-import { QuizStatus } from '@prisma/client';
+import { QuizStatus } from '../models/quiz.model';
 
 /**
  * Create a new quiz
@@ -39,7 +39,7 @@ const getQuizzes = catchAsync(async (req: Request, res: Response) => {
  * @param res Response object to send quiz details
  */
 const getQuiz = catchAsync(async (req: Request, res: Response) => {
-  const result = await quizService.getQuizById(Number(req.params.quizId));
+  const result = await quizService.getQuizById(req.params.quizId);
   if (!result) {
     res.status(httpStatus.NOT_FOUND).send({ message: 'Quiz not found' });
     return;
@@ -53,7 +53,7 @@ const getQuiz = catchAsync(async (req: Request, res: Response) => {
  * @param res Response object to send updated quiz
  */
 const updateQuiz = catchAsync(async (req: Request, res: Response) => {
-  const result = await quizService.updateQuizById(Number(req.params.quizId), req.body);
+  const result = await quizService.updateQuizById(req.params.quizId, req.body);
   res.send(result);
 });
 
@@ -63,7 +63,7 @@ const updateQuiz = catchAsync(async (req: Request, res: Response) => {
  * @param res Response object (No Content)
  */
 const deleteQuiz = catchAsync(async (req: Request, res: Response) => {
-  await quizService.deleteQuizById(Number(req.params.quizId));
+  await quizService.deleteQuizById(req.params.quizId);
   res.status(httpStatus.NO_CONTENT).send();
 });
 
@@ -74,7 +74,7 @@ const deleteQuiz = catchAsync(async (req: Request, res: Response) => {
  */
 const addQuestions = catchAsync(async (req: Request, res: Response) => {
   const result = await quizService.addQuestionsToQuiz(
-    Number(req.params.quizId),
+    req.params.quizId,
     req.body.questionIds,
   );
   res.send(result);
@@ -86,7 +86,7 @@ const addQuestions = catchAsync(async (req: Request, res: Response) => {
  * @param res Response object to send updated quiz
  */
 const publishQuiz = catchAsync(async (req: Request, res: Response) => {
-  const result = await quizService.publishQuiz(Number(req.params.quizId), req.body.classIds);
+  const result = await quizService.publishQuiz(req.params.quizId, req.body.classIds);
   res.send(result);
 });
 

@@ -3,20 +3,20 @@ import { z } from 'zod';
 // Validate start attempt params
 const startAttempt = {
   params: z.object({
-    quizId: z.coerce.number(),
+    quizId: z.string(),
   }),
 };
 
 // Validate submit attempt params and body
 const submitAttempt = {
   params: z.object({
-    attemptId: z.coerce.number(),
+    attemptId: z.string(),
   }),
   body: z.object({
     responses: z.array(
       z.object({
-        questionId: z.number().int(),
-        selectedOptionId: z.number().int(),
+        questionId: z.string(),
+        selectedOptionId: z.string(),
       }),
     ),
   }),

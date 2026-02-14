@@ -1,5 +1,6 @@
+
 import httpStatus from 'http-status';
-import prisma from '../client';
+import Question from '../models/question.model';
 import { ApiError } from '../middlewares/error';
 
 /**
@@ -8,54 +9,45 @@ import { ApiError } from '../middlewares/error';
  * @returns {Promise<Question>}
  */
 const createQuestion = async (questionBody: any) => {
-  const { options, ...questionData } = questionBody;
+  const { options } = questionBody;
 
-  // Verify at least one correct option exists for MCQ
-  if (options && !options.some((opt: any) => opt.isCorrect)) {
+  // Verify at least one correct option exists for MCQ if options provided
+  if (options && options.length > 0 && !options.some((opt: any) => opt.isCorrect)) {
     throw new ApiError(httpStatus.BAD_REQUEST, 'At least one option must be correct');
   }
 
-  return prisma.question.create({
-    data: {
-      ...questionData,
-      options: {
-        create: options,
-      },
-    },
-    include: {
-      options: true,
-    },
-  });
+  return Question.create(questionBody);
 };
 
 /**
  * Query for questions
- * @param {Object} filter - Prisma filter
+ * @param {Object} filter - Filter
  * @param {Object} options - Query options
  * @returns {Promise<Object>}
  */
 const queryQuestions = async (filter: any, options: any) => {
   const where: any = {};
-  if (filter.subject) where.subject = { contains: filter.subject, mode: 'insensitive' };
-  if (filter.topic) where.topic = { contains: filter.topic, mode: 'insensitive' };
+  if (filter.subject) where.subject = { $regex: filter.subject, $options: 'i' };
+  if (filter.topic) where.topic = { $regex: filter.topic, $options: 'i' };
   if (filter.difficulty) where.difficulty = filter.difficulty;
-  if (filter.search) where.text = { contains: filter.search, mode: 'insensitive' };
+  if (filter.search) where.text = { $regex: filter.search, $options: 'i' };
 
   const page = options.page ?? 1;
   const limit = options.limit ?? 10;
   const skip = (page - 1) * limit;
 
-  const questions = await prisma.question.findMany({
-    where,
-    skip,
-    take: limit,
-    orderBy: options.sortBy ? { [options.sortBy]: 'asc' } : { createdAt: 'desc' },
-    include: {
-      options: true,
-    },
-  });
+  let sort = '-createdAt';
+  if (options.sortBy) {
+    const [field, order] = options.sortBy.split(':');
+    sort = (order === 'desc' ? '-' : '') + field;
+  }
 
-  const totalResults = await prisma.question.count({ where });
+  const questions = await Question.find(where)
+    .sort(sort)
+    .skip(skip)
+    .limit(limit);
+
+  const totalResults = await Question.countDocuments(where);
   const totalPages = Math.ceil(totalResults / limit);
 
   return { questions, page, limit, totalPages, totalResults };
@@ -63,79 +55,46 @@ const queryQuestions = async (filter: any, options: any) => {
 
 /**
  * Get question by id
- * @param {number} id
+ * @param {string} id
  * @returns {Promise<Question>}
  */
-const getQuestionById = async (id: number) => {
-  return prisma.question.findUnique({
-    where: { id },
-    include: {
-      options: true,
-    },
-  });
+const getQuestionById = async (id: string) => {
+  return Question.findById(id);
 };
 
 /**
  * Update question by id
- * @param {number} questionId
+ * @param {string} questionId
  * @param {Object} updateBody
  * @returns {Promise<Question>}
  */
-const updateQuestionById = async (questionId: number, updateBody: any) => {
+const updateQuestionById = async (questionId: string, updateBody: any) => {
   const question = await getQuestionById(questionId);
   if (!question) {
     throw new ApiError(httpStatus.NOT_FOUND, 'Question not found');
   }
 
-  const { options, ...data } = updateBody;
-
-  if (options) {
-    if (!options.some((opt: any) => opt.isCorrect)) {
+  if (updateBody.options) {
+    if (!updateBody.options.some((opt: any) => opt.isCorrect)) {
       throw new ApiError(httpStatus.BAD_REQUEST, 'At least one option must be correct');
     }
-
-    // Transaction to update question and replace options
-    return prisma.$transaction(async (tx) => {
-      await tx.question.update({
-        where: { id: questionId },
-        data,
-      });
-
-      // Delete old options
-      await tx.questionOption.deleteMany({
-        where: { questionId },
-      });
-
-      // Create new options
-      await tx.questionOption.createMany({
-        data: options.map((opt: any) => ({ ...opt, questionId })),
-      });
-
-      return tx.question.findUnique({
-        where: { id: questionId },
-        include: { options: true },
-      });
-    });
   }
 
-  return prisma.question.update({
-    where: { id: questionId },
-    data: data,
-    include: { options: true },
-  });
+  Object.assign(question, updateBody);
+  await question.save();
+  return question;
 };
 
 /**
  * Delete question by id
- * @param {number} questionId
+ * @param {string} questionId
  * @returns {Promise<Question>}
  */
-const deleteQuestionById = async (questionId: number) => {
-  const question = await getQuestionById(questionId);
+const deleteQuestionById = async (questionId: string) => {
+  const question = await Question.findByIdAndDelete(questionId);
   if (!question) {
     throw new ApiError(httpStatus.NOT_FOUND, 'Question not found');
   }
-  await prisma.question.delete({ where: { id: questionId } });
   return question;
 };
 

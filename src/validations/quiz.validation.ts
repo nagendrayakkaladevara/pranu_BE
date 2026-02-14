@@ -28,14 +28,14 @@ const getQuizzes = {
 // Validate get quiz params
 const getQuiz = {
   params: z.object({
-    quizId: z.coerce.number(),
+    quizId: z.string(),
   }),
 };
 
 // Validate update quiz params and body
 const updateQuiz = {
   params: z.object({
-    quizId: z.coerce.number(),
+    quizId: z.string(),
   }),
   body: z
     .object({
@@ -55,27 +55,27 @@ const updateQuiz = {
 
 const deleteQuiz = {
   params: z.object({
-    quizId: z.coerce.number(),
+    quizId: z.string(),
   }),
 };
 
 // Validate add questions to quiz params and body
 const addQuestions = {
   params: z.object({
-    quizId: z.coerce.number(),
+    quizId: z.string(),
   }),
   body: z.object({
-    questionIds: z.array(z.number().int()),
+    questionIds: z.array(z.string()),
   }),
 };
 
 // Validate publish quiz params and body
 const publishQuiz = {
   params: z.object({
-    quizId: z.coerce.number(),
+    quizId: z.string(),
   }),
   body: z.object({
-    classIds: z.array(z.number().int()),
+    classIds: z.array(z.string()),
   }),
 };
 

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { Role } from '@prisma/client';
+import { Role } from '../models/user.model';
 
 // Validate create user body
 const createUser = {
@@ -25,14 +25,14 @@ const getUsers = {
 // Validate get user by ID params
 const getUser = {
   params: z.object({
-    userId: z.coerce.number(),
+    userId: z.string(),
   }),
 };
 
 // Validate update user params and body
 const updateUser = {
   params: z.object({
-    userId: z.coerce.number(),
+    userId: z.string(),
   }),
   body: z
     .object({
@@ -50,7 +50,7 @@ const updateUser = {
 // Validate delete user params
 const deleteUser = {
   params: z.object({
-    userId: z.coerce.number(),
+    userId: z.string(),
   }),
 };
 

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { Difficulty, QuestionType } from '@prisma/client';
+import { Difficulty, QuestionType } from '../models/question.model';
 
 const optionSchema = z.object({
   text: z.string().min(1),
@@ -35,14 +35,14 @@ const getQuestions = {
 // Validate get question params
 const getQuestion = {
   params: z.object({
-    questionId: z.coerce.number(),
+    questionId: z.string(),
   }),
 };
 
 // Validate update question params and body
 const updateQuestion = {
   params: z.object({
-    questionId: z.coerce.number(),
+    questionId: z.string(),
   }),
   body: z
     .object({
@@ -52,7 +52,6 @@ const updateQuestion = {
       subject: z.string().min(1).optional(),
       topic: z.string().optional(),
       options: z.array(optionSchema).min(2).optional(),
-      // Optimization: If options are provided, we replace all existing ones.
     })
     .refine((data) => Object.keys(data).length > 0, {
       message: 'At least one field must be provided',
@@ -61,7 +60,7 @@ const updateQuestion = {
 
 const deleteQuestion = {
   params: z.object({
-    questionId: z.coerce.number(),
+    questionId: z.string(),
   }),
 };
 

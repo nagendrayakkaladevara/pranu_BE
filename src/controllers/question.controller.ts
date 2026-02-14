@@ -2,7 +2,7 @@ import httpStatus from 'http-status';
 import { Request, Response } from 'express';
 import catchAsync from '../utils/catchAsync';
 import questionService from '../services/question.service';
-import { Difficulty } from '@prisma/client';
+import { Difficulty } from '../models/question.model';
 
 /**
  * Create a new question
@@ -41,7 +41,7 @@ const getQuestions = catchAsync(async (req: Request, res: Response) => {
  * @param res Response object to send question details
  */
 const getQuestion = catchAsync(async (req: Request, res: Response) => {
-  const result = await questionService.getQuestionById(Number(req.params.questionId));
+  const result = await questionService.getQuestionById(req.params.questionId);
   if (!result) {
     res.status(httpStatus.NOT_FOUND).send({ message: 'Question not found' });
     return;
@@ -55,7 +55,7 @@ const getQuestion = catchAsync(async (req: Request, res: Response) => {
  * @param res Response object to send updated question
  */
 const updateQuestion = catchAsync(async (req: Request, res: Response) => {
-  const result = await questionService.updateQuestionById(Number(req.params.questionId), req.body);
+  const result = await questionService.updateQuestionById(req.params.questionId, req.body);
   res.send(result);
 });
 
@@ -65,7 +65,7 @@ const updateQuestion = catchAsync(async (req: Request, res: Response) => {
  * @param res Response object (No Content)
  */
 const deleteQuestion = catchAsync(async (req: Request, res: Response) => {
-  await questionService.deleteQuestionById(Number(req.params.questionId));
+  await questionService.deleteQuestionById(req.params.questionId);
   res.status(httpStatus.NO_CONTENT).send();
 });
 

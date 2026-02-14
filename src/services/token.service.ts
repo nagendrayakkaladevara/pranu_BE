@@ -1,7 +1,8 @@
+
 import jwt from 'jsonwebtoken';
 import moment from 'moment';
 import config from '../config/config';
-import { User } from '@prisma/client';
+import { IUser } from '../models/user.model';
 
 /**
  * Generate token
@@ -11,7 +12,7 @@ import { User } from '@prisma/client';
  * @param {string} [secret]
  * @returns {string}
  */
-const generateToken = (userId: number, expires: moment.Moment, secret = config.jwt.secret) => {
+const generateToken = (userId: string, expires: moment.Moment, secret = config.jwt.secret) => {
   const payload = {
     sub: userId,
     iat: moment().unix(),
@@ -25,7 +26,7 @@ const generateToken = (userId: number, expires: moment.Moment, secret = config.j
  * @param {User} user
  * @returns {Promise<Object>}
  */
-const generateAuthTokens = async (user: User) => {
+const generateAuthTokens = async (user: IUser) => {
   const accessTokenExpires = moment().add(config.jwt.accessExpirationMinutes, 'minutes');
   const accessToken = generateToken(user.id, accessTokenExpires);
 

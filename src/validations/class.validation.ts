@@ -24,14 +24,14 @@ const getClasses = {
 // Validate get class params
 const getClass = {
   params: z.object({
-    classId: z.coerce.number(),
+    classId: z.string(),
   }),
 };
 
 // Validate update class params and body
 const updateClass = {
   params: z.object({
-    classId: z.coerce.number(),
+    classId: z.string(),
   }),
   body: z
     .object({
@@ -48,25 +48,25 @@ const updateClass = {
 // Validate delete class params
 const deleteClass = {
   params: z.object({
-    classId: z.coerce.number(),
+    classId: z.string(),
   }),
 };
 
 const assignStudents = {
   params: z.object({
-    classId: z.coerce.number(),
+    classId: z.string(),
   }),
   body: z.object({
-    studentIds: z.array(z.coerce.number()),
+    studentIds: z.array(z.string()),
   }),
 };
 
 const assignLecturers = {
   params: z.object({
-    classId: z.coerce.number(),
+    classId: z.string(),
   }),
   body: z.object({
-    lecturerIds: z.array(z.coerce.number()),
+    lecturerIds: z.array(z.string()),
   }),
 };
 

@@ -1,36 +1,37 @@
+
 import httpStatus from 'http-status';
-import prisma from '../client';
+import Quiz from '../models/quiz.model';
+import QuizAttempt, { AttemptStatus } from '../models/attempt.model';
+import User from '../models/user.model';
 import { ApiError } from '../middlewares/error';
-import { AttemptStatus } from '@prisma/client';
 
 /**
  * Get quiz results and statistics
- * @param {number} quizId
+ * @param {string} quizId
  * @returns {Promise<Object>}
  */
-const getQuizResults = async (quizId: number) => {
-  const quiz = await prisma.quiz.findUnique({
-    where: { id: quizId },
-    include: {
-      questions: true,
-    },
-  });
+const getQuizResults = async (quizId: string) => {
+  const quiz = await Quiz.findById(quizId).populate('questions');
 
   if (!quiz) {
     throw new ApiError(httpStatus.NOT_FOUND, 'Quiz not found');
   }
 
-  const attempts = await prisma.quizAttempt.findMany({
-    where: {
-      quizId,
-      status: AttemptStatus.SUBMITTED,
-    },
-    include: {
-      student: {
-        select: { id: true, name: true, email: true },
-      },
-    },
-    orderBy: { score: 'desc' },
+  const attemptsDocs = await QuizAttempt.find({
+    quiz: quizId,
+    status: AttemptStatus.SUBMITTED,
+  })
+    .populate('student', 'id name email')
+    .sort({ score: -1 });
+
+  // Map to include student properly (toJSON handles _id -> id)
+  const attempts = attemptsDocs.map((doc) => {
+    const obj = doc.toJSON();
+    // student is populated
+    return {
+      ...obj,
+      student: (doc.student as any).toJSON(),
+    };
   });
 
   // Calculate Statistics
@@ -66,30 +67,22 @@ const getQuizResults = async (quizId: number) => {
 
 /**
  * Get student statistics
- * @param {number} studentId
+ * @param {string} studentId
  * @returns {Promise<Object>}
  */
-const getStudentStats = async (studentId: number) => {
-  const student = await prisma.user.findUnique({
-    where: { id: studentId },
-  });
+const getStudentStats = async (studentId: string) => {
+  const student = await User.findById(studentId);
 
   if (!student) {
     throw new ApiError(httpStatus.NOT_FOUND, 'Student not found');
   }
 
-  const attempts = await prisma.quizAttempt.findMany({
-    where: {
-      studentId,
-      status: AttemptStatus.SUBMITTED,
-    },
-    include: {
-      quiz: {
-        select: { title: true, totalMarks: true, passMarks: true },
-      },
-    },
-    orderBy: { startTime: 'desc' },
-  });
+  const attemptsDocs = await QuizAttempt.find({
+    student: studentId,
+    status: AttemptStatus.SUBMITTED,
+  })
+    .populate('quiz', 'title totalMarks passMarks')
+    .sort({ startTime: -1 });
 
   return {
     student: {
@@ -97,14 +90,17 @@ const getStudentStats = async (studentId: number) => {
       name: student.name,
       email: student.email,
     },
-    attempts: attempts.map((a) => ({
-      id: a.id,
-      quizTitle: a.quiz.title,
-      score: a.score,
-      totalMarks: a.quiz.totalMarks,
-      passed: a.quiz.passMarks ? (a.score || 0) >= a.quiz.passMarks : null,
-      date: a.endTime,
-    })),
+    attempts: attemptsDocs.map((a) => {
+      const quiz = (a.quiz as any);
+      return {
+        id: a.id,
+        quizTitle: quiz?.title || 'Unknown Quiz',
+        score: a.score,
+        totalMarks: quiz?.totalMarks || 0,
+        passed: quiz?.passMarks ? (a.score || 0) >= quiz.passMarks : null,
+        date: a.endTime,
+      };
+    }),
   };
 };
 

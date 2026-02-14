@@ -9,7 +9,7 @@ import analyticsService from '../services/analytics.service';
  * @param res Response object to send quiz statistics
  */
 const getQuizResults = catchAsync(async (req: Request, res: Response) => {
-  const result = await analyticsService.getQuizResults(Number(req.params.quizId));
+  const result = await analyticsService.getQuizResults(req.params.quizId);
   res.send(result);
 });
 
@@ -19,7 +19,7 @@ const getQuizResults = catchAsync(async (req: Request, res: Response) => {
  * @param res Response object to send student's attempt history
  */
 const getStudentStats = catchAsync(async (req: Request, res: Response) => {
-  const result = await analyticsService.getStudentStats(Number(req.params.studentId));
+  const result = await analyticsService.getStudentStats(req.params.studentId);
   res.send(result);
 });
 

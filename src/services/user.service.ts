@@ -1,8 +1,7 @@
-import bcrypt from 'bcryptjs';
+
 import httpStatus from 'http-status';
-import prisma from '../client';
+import User from '../models/user.model';
 import { ApiError } from '../middlewares/error';
-import { Role, User } from '@prisma/client';
 
 /**
  * Create a user
@@ -10,38 +9,18 @@ import { Role, User } from '@prisma/client';
  * @returns {Promise<User>}
  */
 const createUser = async (userBody: any) => {
-  if (await isEmailTaken(userBody.email)) {
+  if (await User.isEmailTaken(userBody.email)) {
     throw new ApiError(httpStatus.BAD_REQUEST, 'Email already taken');
   }
-
-  const hashedPassword = await bcrypt.hash(userBody.password, 8);
-
-  const user = await prisma.user.create({
-    data: {
-      ...userBody,
-      password: hashedPassword,
-    },
-  });
-
-  return user;
+  return User.create(userBody);
 };
 
-const isEmailTaken = async (email: string, excludeUserId?: number): Promise<boolean> => {
-  const user = await prisma.user.findUnique({
-    where: { email },
-  });
-
-  if (excludeUserId && user?.id === excludeUserId) {
-    return false;
-  }
-
-  return !!user;
+const isEmailTaken = async (email: string, excludeUserId?: string): Promise<boolean> => {
+  return User.isEmailTaken(email, excludeUserId);
 };
 
 const getUserByEmail = async (email: string) => {
-  return prisma.user.findUnique({
-    where: { email },
-  });
+  return User.findOne({ email });
 };
 
 /**
@@ -49,10 +28,8 @@ const getUserByEmail = async (email: string) => {
  * @param {ObjectId} id
  * @returns {Promise<User>}
  */
-const getUserById = async (id: number) => {
-  return prisma.user.findUnique({
-    where: { id },
-  });
+const getUserById = async (id: string) => {
+  return User.findById(id);
 };
 
 const apiCreateUser = async (userBody: any) => {
@@ -61,33 +38,41 @@ const apiCreateUser = async (userBody: any) => {
 
 /**
  * Query for users
- * @param {Object} filter - Prisma filter
+ * @param {Object} filter - Simple filter
  * @param {Object} options - Query options
- * @param {string} [options.sortBy] - Sort option in the format: sortField:(desc|asc)
- * @param {number} [options.limit] - Maximum number of results per page (default = 10)
- * @param {number} [options.page] - Current page (default = 1)
+ * @param {string} [options.sortBy] - Sort option (e.g. name:asc)
+ * @param {number} [options.limit] - Limit per page
+ * @param {number} [options.page] - Page number
  * @returns {Promise<Object>}
  */
 const queryUsers = async (filter: any, options: any) => {
-  // Basic filter implementation
   const where: any = {};
   if (filter.role) where.role = filter.role;
-  if (filter.name) where.name = { contains: filter.name, mode: 'insensitive' };
+  if (filter.name) where.name = { $regex: filter.name, $options: 'i' };
 
-  // Pagination
   const page = options.page ?? 1;
   const limit = options.limit ?? 10;
   const skip = (page - 1) * limit;
 
-  const users = await prisma.user.findMany({
-    where,
-    skip,
-    take: limit,
-    orderBy: options.sortBy ? { [options.sortBy]: 'asc' } : { createdAt: 'desc' },
-    select: { id: true, name: true, email: true, role: true, isActive: true, createdAt: true }, // Exclude password
-  });
+  let sort = '';
+  if (options.sortBy) {
+    const parts = options.sortBy.split(':');
+    sort = parts[0] + (parts[1] === 'desc' ? ' -' : ''); // Approximation, mongoose syntax string 'field' or '-field'
+    // Better: sort object { field: 1/-1 }
+    // If input is "field:asc/desc"
+    const [field, order] = options.sortBy.split(':');
+    sort = (order === 'desc' ? '-' : '') + field;
+  } else {
+    sort = '-createdAt';
+  }
 
-  const totalResults = await prisma.user.count({ where });
+  const users = await User.find(where)
+    .sort(sort)
+    .skip(skip)
+    .limit(limit)
+    .select('-password');
+
+  const totalResults = await User.countDocuments(where);
   const totalPages = Math.ceil(totalResults / limit);
 
   return { users, page, limit, totalPages, totalResults };
@@ -99,7 +84,7 @@ const queryUsers = async (filter: any, options: any) => {
  * @param {Object} updateBody
  * @returns {Promise<User>}
  */
-const updateUserById = async (userId: number, updateBody: any) => {
+const updateUserById = async (userId: string, updateBody: any) => {
   const user = await getUserById(userId);
   if (!user) {
     throw new ApiError(httpStatus.NOT_FOUND, 'User not found');
@@ -108,16 +93,11 @@ const updateUserById = async (userId: number, updateBody: any) => {
     throw new ApiError(httpStatus.BAD_REQUEST, 'Email already taken');
   }
 
-  // If password is being updated, hash it
-  if (updateBody.password) {
-    updateBody.password = await bcrypt.hash(updateBody.password, 8);
-  }
-
-  const updatedUser = await prisma.user.update({
-    where: { id: userId },
-    data: updateBody,
-  });
-  return updatedUser;
+  // Assign updates
+  Object.assign(user, updateBody);
+  // Saving triggers pre-save hook for password hashing
+  await user.save();
+  return user;
 };
 
 /**
@@ -125,12 +105,12 @@ const updateUserById = async (userId: number, updateBody: any) => {
  * @param {ObjectId} userId
  * @returns {Promise<User>}
  */
-const deleteUserById = async (userId: number) => {
+const deleteUserById = async (userId: string) => {
   const user = await getUserById(userId);
   if (!user) {
     throw new ApiError(httpStatus.NOT_FOUND, 'User not found');
   }
-  await prisma.user.delete({ where: { id: userId } });
+  await user.deleteOne();
   return user;
 };
 

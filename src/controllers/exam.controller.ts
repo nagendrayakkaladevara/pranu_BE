@@ -19,7 +19,7 @@ const listQuizzes = catchAsync(async (req: Request, res: Response) => {
  * @param res Response object to send quiz questions and attempt info
  */
 const startAttempt = catchAsync(async (req: Request, res: Response) => {
-  const result = await examService.startAttempt(Number(req.params.quizId), req.user.id);
+  const result = await examService.startAttempt(req.params.quizId, req.user.id);
   res.send(result);
 });
 
@@ -30,7 +30,7 @@ const startAttempt = catchAsync(async (req: Request, res: Response) => {
  */
 const submitAttempt = catchAsync(async (req: Request, res: Response) => {
   const result = await examService.submitAttempt(
-    Number(req.params.attemptId),
+    req.params.attemptId,
     req.user.id,
     req.body.responses,
   );

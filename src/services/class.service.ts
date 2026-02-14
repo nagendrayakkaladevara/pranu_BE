@@ -1,5 +1,7 @@
+
 import httpStatus from 'http-status';
-import prisma from '../client';
+import Class from '../models/class.model';
+import User from '../models/user.model';
 import { ApiError } from '../middlewares/error';
 
 /**
@@ -8,165 +10,146 @@ import { ApiError } from '../middlewares/error';
  * @returns {Promise<Class>}
  */
 const createClass = async (classBody: any) => {
-  return prisma.class.create({
-    data: classBody,
-  });
+  return Class.create(classBody);
 };
 
 /**
  * Query for classes
- * @param {Object} filter - Prisma filter
+ * @param {Object} filter - Filter
  * @param {Object} options - Query options
  * @returns {Promise<Object>}
  */
 const queryClasses = async (filter: any, options: any) => {
   const where: any = {};
-  if (filter.name) where.name = { contains: filter.name, mode: 'insensitive' };
-  if (filter.department) where.department = { contains: filter.department, mode: 'insensitive' };
+  if (filter.name) where.name = { $regex: filter.name, $options: 'i' };
+  if (filter.department) where.department = { $regex: filter.department, $options: 'i' };
 
   const page = options.page ?? 1;
   const limit = options.limit ?? 10;
   const skip = (page - 1) * limit;
 
-  const classes = await prisma.class.findMany({
-    where,
-    skip,
-    take: limit,
-    orderBy: options.sortBy ? { [options.sortBy]: 'asc' } : { createdAt: 'desc' },
-    include: {
-      _count: {
-        select: { students: true, lecturers: true },
-      },
-    },
-  });
+  let sort = '-createdAt';
+  if (options.sortBy) {
+    const [field, order] = options.sortBy.split(':');
+    sort = (order === 'desc' ? '-' : '') + field;
+  }
 
-  const totalResults = await prisma.class.count({ where });
+  const classesDocs = await Class.find(where)
+    .sort(sort)
+    .skip(skip)
+    .limit(limit);
+
+  const totalResults = await Class.countDocuments(where);
   const totalPages = Math.ceil(totalResults / limit);
+
+  // Map to match Prisma _count structure if possible, or just return docs
+  // Prisma: include: { _count: { select: { students: true, lecturers: true } } }
+  // Result has ._count.students
+  const classes = classesDocs.map((doc) => {
+    const obj = doc.toJSON();
+    return {
+      ...obj,
+      _count: {
+        students: doc.students.length,
+        lecturers: doc.lecturers.length,
+      },
+    };
+  });
 
   return { classes, page, limit, totalPages, totalResults };
 };
 
 /**
  * Get class by id
- * @param {number} id
+ * @param {string} id
  * @returns {Promise<Class>}
  */
-const getClassById = async (id: number) => {
-  return prisma.class.findUnique({
-    where: { id },
-    include: {
-      students: {
-        include: {
-          student: {
-            select: { id: true, name: true, email: true },
-          },
-        },
-      },
-      lecturers: {
-        include: {
-          lecturer: {
-            select: { id: true, name: true, email: true },
-          },
-        },
-      },
-    },
-  });
+const getClassById = async (id: string) => {
+  const classDoc = await Class.findById(id)
+    .populate('students', 'id name email')
+    .populate('lecturers', 'id name email');
+
+  if (!classDoc) return null;
+
+  // Transform to match Prisma structure: students: [{ student: { ... } }]
+  const obj = classDoc.toJSON();
+  const students = (obj.students as any[]).map((s) => ({ student: s }));
+  const lecturers = (obj.lecturers as any[]).map((l) => ({ lecturer: l }));
+
+  return { ...obj, students, lecturers };
 };
 
 /**
  * Update class by id
- * @param {number} classId
+ * @param {string} classId
  * @param {Object} updateBody
  * @returns {Promise<Class>}
  */
-const updateClassById = async (classId: number, updateBody: any) => {
-  const classData = await getClassById(classId);
-  if (!classData) {
+const updateClassById = async (classId: string, updateBody: any) => {
+  const classDoc = await Class.findByIdAndUpdate(classId, updateBody, { new: true });
+  if (!classDoc) {
     throw new ApiError(httpStatus.NOT_FOUND, 'Class not found');
   }
-  const updatedClass = await prisma.class.update({
-    where: { id: classId },
-    data: updateBody,
-  });
-  return updatedClass;
+  return classDoc;
 };
 
 /**
  * Delete class by id
- * @param {number} classId
+ * @param {string} classId
  * @returns {Promise<Class>}
  */
-const deleteClassById = async (classId: number) => {
-  const classData = await getClassById(classId);
-  if (!classData) {
+const deleteClassById = async (classId: string) => {
+  const classDoc = await Class.findByIdAndDelete(classId);
+  if (!classDoc) {
     throw new ApiError(httpStatus.NOT_FOUND, 'Class not found');
   }
-  await prisma.class.delete({ where: { id: classId } });
-  return classData;
+  return classDoc;
 };
 
-const assignStudentsToClass = async (classId: number, studentIds: number[]) => {
-  const classData = await getClassById(classId);
-  if (!classData) {
+const assignStudentsToClass = async (classId: string, studentIds: string[]) => {
+  const classDoc = await Class.findById(classId);
+  if (!classDoc) {
     throw new ApiError(httpStatus.NOT_FOUND, 'Class not found');
   }
 
-  // Verify all students exist and are actually students
-  const students = await prisma.user.findMany({
-    where: {
-      id: { in: studentIds },
-      role: 'STUDENT',
-    },
+  // Verify students
+  const count = await User.countDocuments({
+    _id: { $in: studentIds },
+    role: 'STUDENT',
   });
 
-  if (students.length !== studentIds.length) {
+  if (count !== studentIds.length) {
     throw new ApiError(httpStatus.BAD_REQUEST, 'One or more user IDs are invalid or not students');
   }
 
-  // Transaction to create assignments
-  // Prisma createMany for many-to-many pivots is tricky if duplicates exist.
-  // Ideally we ignore duplicates.
-
-  // We'll map and try to create, or use a loop. Since createMany skipDuplicates is safer.
-  const data = studentIds.map((sId) => ({
-    classId,
-    studentId: sId,
-  }));
-
-  await prisma.classStudent.createMany({
-    data,
-    skipDuplicates: true,
-  });
+  // Add using $addToSet to avoid duplicates
+  await Class.updateOne(
+    { _id: classId },
+    { $addToSet: { students: { $each: studentIds } } }
+  );
 
   return getClassById(classId);
 };
 
-const assignLecturersToClass = async (classId: number, lecturerIds: number[]) => {
-  const classData = await getClassById(classId);
-  if (!classData) {
+const assignLecturersToClass = async (classId: string, lecturerIds: string[]) => {
+  const classDoc = await Class.findById(classId);
+  if (!classDoc) {
     throw new ApiError(httpStatus.NOT_FOUND, 'Class not found');
   }
 
-  const lecturers = await prisma.user.findMany({
-    where: {
-      id: { in: lecturerIds },
-      role: 'LECTURER',
-    },
+  const count = await User.countDocuments({
+    _id: { $in: lecturerIds },
+    role: 'LECTURER',
   });
 
-  if (lecturers.length !== lecturerIds.length) {
+  if (count !== lecturerIds.length) {
     throw new ApiError(httpStatus.BAD_REQUEST, 'One or more user IDs are invalid or not lecturers');
   }
 
-  const data = lecturerIds.map((lId) => ({
-    classId,
-    lecturerId: lId,
-  }));
-
-  await prisma.classLecturer.createMany({
-    data,
-    skipDuplicates: true,
-  });
+  await Class.updateOne(
+    { _id: classId },
+    { $addToSet: { lecturers: { $each: lecturerIds } } }
+  );
 
   return getClassById(classId);
 };

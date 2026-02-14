@@ -28,7 +28,7 @@ const getUsers = catchAsync(async (req: Request, res: Response) => {
  * @param res Response object to send user details
  */
 const getUser = catchAsync(async (req: Request, res: Response) => {
-  const user = await userService.getUserById(Number(req.params.userId));
+  const user = await userService.getUserById(req.params.userId);
   if (!user) {
     res.status(httpStatus.NOT_FOUND).send({ message: 'User not found' });
     return;
@@ -42,7 +42,7 @@ const getUser = catchAsync(async (req: Request, res: Response) => {
  * @param res Response object to send updated user
  */
 const updateUser = catchAsync(async (req: Request, res: Response) => {
-  const user = await userService.updateUserById(Number(req.params.userId), req.body);
+  const user = await userService.updateUserById(req.params.userId, req.body);
   res.send(user);
 });
 
@@ -52,7 +52,7 @@ const updateUser = catchAsync(async (req: Request, res: Response) => {
  * @param res Response object (No Content)
  */
 const deleteUser = catchAsync(async (req: Request, res: Response) => {
-  await userService.deleteUserById(Number(req.params.userId));
+  await userService.deleteUserById(req.params.userId);
   res.status(httpStatus.NO_CONTENT).send();
 });
 
