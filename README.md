@@ -5,12 +5,14 @@ Production-ready Node.js backend with Express, TypeScript, and Prisma.
 ## Setup
 
 1. **Install Dependencies**
+
    ```bash
    npm install
    ```
 
 2. **Environment Variables**
    Copy `.env.example` to `.env` (if not already done) and update `DATABASE_URL`.
+
    ```bash
    cp .env.example .env
    ```

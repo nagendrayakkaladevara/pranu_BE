@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl:*)",
+      "Bash(STUDENT_TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2OThlZTZkYjBjZWQ2NjJmZmNlNDIwZWMiLCJpYXQiOjE3NzA5NzI4OTEsImV4cCI6MTc3MDk3NDY5MX0.BtpI6IlDWVUU2D5c5EOOWSoLZ8q6hzXT9si_ZgXez7M\")",
+      "Bash(ATTEMPT_ID=\"698eecff0ced662ffce4216c\")",
+      "Bash(__NEW_LINE_d364c1cd1e8e60e9__ echo \"=== Submit Quiz Attempt ===\")",
+      "Bash(LECTURER_TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2OThlZTZkYTBjZWQ2NjJmZmNlNDIwZTkiLCJpYXQiOjE3NzA5NzI4OTAsImV4cCI6MTc3MDk3NDY5MH0.5tVkBEhiIKyz09ZwgTljcjpXOt7MnlfceCLrS1Q7cpQ\")",
+      "Bash(QUIZ_ID=\"698eeae40ced662ffce4213d\")",
+      "Bash(STUDENT_ID=\"698ee6db0ced662ffce420ec\")",
+      "Bash(__NEW_LINE_9a2c2515a74cc1e6__ echo \"=== Quiz Results/Analytics ===\")",
+      "Bash(__NEW_LINE_9a2c2515a74cc1e6__ echo \"=== Student Stats ===\")",
+      "Bash(ADMIN_TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2OThlZTY2ZTBjZWQ2NjJmZmNlNDIwZTUiLCJpYXQiOjE3NzA5NzI3ODgsImV4cCI6MTc3MDk3NDU4OH0.ARSJR4jOYyEgO35tw0thKMkH-6eGsKi5DReghhr_krY\")",
+      "Bash(STUDENT2_ID=\"698ee8580ced662ffce420f8\")",
+      "Bash(__NEW_LINE_4a24b2342807703a__ echo \"=== Delete User ===\")",
+      "Bash(__NEW_LINE_4a24b2342807703a__ echo \"=== Verify Deleted ===\")",
+      "Bash(__NEW_LINE_4a24b2342807703a__ echo \"=== Test Auth Required \\(no token\\) ===\")",
+      "Bash(__NEW_LINE_4a24b2342807703a__ echo \"=== Test Wrong Role \\(student accessing admin route\\) ===\")",
+      "Bash(__NEW_LINE_4a24b2342807703a__ echo \"=== Test Invalid Login ===\")",
+      "Bash(__NEW_LINE_4a24b2342807703a__ echo \"=== Test 404 Unknown Route ===\")"
+    ]
+  }
+}

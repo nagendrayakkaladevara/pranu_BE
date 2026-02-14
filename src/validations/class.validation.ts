@@ -1,0 +1,81 @@
+import { z } from 'zod';
+
+// Validate create class body
+const createClass = {
+  body: z.object({
+    name: z.string().min(1),
+    department: z.string().min(1),
+    academicYear: z.string().min(1),
+    semester: z.coerce.number().int().min(1),
+  }),
+};
+
+// Validate get classes query
+const getClasses = {
+  query: z.object({
+    name: z.string().optional(),
+    department: z.string().optional(),
+    sortBy: z.string().optional(),
+    limit: z.coerce.number().optional(),
+    page: z.coerce.number().optional(),
+  }),
+};
+
+// Validate get class params
+const getClass = {
+  params: z.object({
+    classId: z.string(),
+  }),
+};
+
+// Validate update class params and body
+const updateClass = {
+  params: z.object({
+    classId: z.string(),
+  }),
+  body: z
+    .object({
+      name: z.string().min(1).optional(),
+      department: z.string().min(1).optional(),
+      academicYear: z.string().min(1).optional(),
+      semester: z.coerce.number().int().min(1).optional(),
+    })
+    .refine((data) => Object.keys(data).length > 0, {
+      message: 'At least one field must be provided',
+    }),
+};
+
+// Validate delete class params
+const deleteClass = {
+  params: z.object({
+    classId: z.string(),
+  }),
+};
+
+const assignStudents = {
+  params: z.object({
+    classId: z.string(),
+  }),
+  body: z.object({
+    studentIds: z.array(z.string()),
+  }),
+};
+
+const assignLecturers = {
+  params: z.object({
+    classId: z.string(),
+  }),
+  body: z.object({
+    lecturerIds: z.array(z.string()),
+  }),
+};
+
+export default {
+  createClass,
+  getClasses,
+  getClass,
+  updateClass,
+  deleteClass,
+  assignStudents,
+  assignLecturers,
+};

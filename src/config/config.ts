@@ -4,10 +4,13 @@ import { z } from 'zod';
 
 dotenv.config({ path: path.join(__dirname, '../../.env') });
 
+// Validate environment variables using Zod
 const envSchema = z.object({
     NODE_ENV: z.enum(['production', 'development', 'test']).default('development'),
     PORT: z.coerce.number().default(3000),
     DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
+    JWT_SECRET: z.string().min(1, 'JWT_SECRET is required'),
+    JWT_ACCESS_EXPIRATION_MINUTES: z.coerce.number().default(30),
 });
 
 const envVars = envSchema.safeParse(process.env);
@@ -20,7 +23,15 @@ export default {
     env: envVars.data.NODE_ENV,
     port: envVars.data.PORT,
     mongoose: {
-        // keeping structure for future if needed, but using prisma now
+        // Mongoose configuration options can be added here
+        url: envVars.data.DATABASE_URL,
+        options: {
+            // dbName: 'my_db' // optional
+        },
     },
     databaseUrl: envVars.data.DATABASE_URL,
+    jwt: {
+        secret: envVars.data.JWT_SECRET,
+        accessExpirationMinutes: envVars.data.JWT_ACCESS_EXPIRATION_MINUTES,
+    },
 };
