@@ -17,7 +17,8 @@
       "Bash(__NEW_LINE_4a24b2342807703a__ echo \"=== Test Auth Required \\(no token\\) ===\")",
       "Bash(__NEW_LINE_4a24b2342807703a__ echo \"=== Test Wrong Role \\(student accessing admin route\\) ===\")",
       "Bash(__NEW_LINE_4a24b2342807703a__ echo \"=== Test Invalid Login ===\")",
-      "Bash(__NEW_LINE_4a24b2342807703a__ echo \"=== Test 404 Unknown Route ===\")"
+      "Bash(__NEW_LINE_4a24b2342807703a__ echo \"=== Test 404 Unknown Route ===\")",
+      "Bash(npm run build:*)"
     ]
   }
 }
