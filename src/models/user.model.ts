@@ -77,7 +77,7 @@ userSchema.pre('save', async function () {
 
 // A simple plugin to return cleaner JSON
 userSchema.set('toJSON', {
-    transform: (doc, ret) => {
+    transform: (_doc: any, ret: any) => {
         ret.id = ret._id;
         delete ret._id;
         delete ret.__v;

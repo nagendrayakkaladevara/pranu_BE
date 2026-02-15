@@ -28,7 +28,7 @@ export const errorConverter = (err: any, req: Request, res: Response, next: Next
       error.statusCode || (error instanceof Error
         ? httpStatus.BAD_REQUEST
         : httpStatus.INTERNAL_SERVER_ERROR);
-    const message = error.message || httpStatus[statusCode];
+    const message = error.message || (httpStatus as any)[statusCode];
     error = new ApiError(statusCode, message as string, false, err.stack);
   }
   next(error);

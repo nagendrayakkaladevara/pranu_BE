@@ -15,7 +15,7 @@ import { ApiError } from '../middlewares/error';
 const createQuiz = async (quizBody: any, user: IUser) => {
   return Quiz.create({
     ...quizBody,
-    createdBy: user.id,
+    createdBy: user._id,
   });
 };
 
