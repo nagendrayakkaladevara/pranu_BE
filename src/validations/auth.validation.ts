@@ -1,16 +1,14 @@
 import { z } from 'zod';
 
-// Validate registration body
 const register = {
   body: z.object({
     email: z.string().email(),
     password: z.string().min(8),
     name: z.string(),
-    role: z.enum(['ADMIN', 'LECTURER', 'STUDENT']).optional(), // Default is STUDENT
+    role: z.enum(['ADMIN', 'LECTURER', 'STUDENT']).optional(),
   }),
 };
 
-// Validate login body
 const login = {
   body: z.object({
     email: z.string().email(),
@@ -18,7 +16,30 @@ const login = {
   }),
 };
 
+const logout = {
+  body: z.object({
+    refreshToken: z.string(),
+  }),
+};
+
+const refreshTokens = {
+  body: z.object({
+    refreshToken: z.string(),
+  }),
+};
+
+const updateMe = {
+  body: z.object({
+    name: z.string().optional(),
+    email: z.string().email().optional(),
+    password: z.string().min(8).optional(),
+  }),
+};
+
 export default {
   register,
   login,
+  logout,
+  refreshTokens,
+  updateMe,
 };

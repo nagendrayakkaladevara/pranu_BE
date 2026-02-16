@@ -20,7 +20,7 @@ const isEmailTaken = async (email: string, excludeUserId?: string): Promise<bool
 };
 
 const getUserByEmail = async (email: string) => {
-  return User.findOne({ email });
+  return User.findOne({ email, isDeleted: { $ne: true } });
 };
 
 /**
@@ -29,7 +29,7 @@ const getUserByEmail = async (email: string) => {
  * @returns {Promise<User>}
  */
 const getUserById = async (id: string) => {
-  return User.findById(id);
+  return User.findOne({ _id: id, isDeleted: { $ne: true } });
 };
 
 const apiCreateUser = async (userBody: any) => {
@@ -46,7 +46,7 @@ const apiCreateUser = async (userBody: any) => {
  * @returns {Promise<Object>}
  */
 const queryUsers = async (filter: any, options: any) => {
-  const where: any = {};
+  const where: any = { isDeleted: { $ne: true } };
   if (filter.role) where.role = filter.role;
   if (filter.name) where.name = { $regex: filter.name, $options: 'i' };
 
@@ -110,7 +110,9 @@ const deleteUserById = async (userId: string) => {
   if (!user) {
     throw new ApiError(httpStatus.NOT_FOUND, 'User not found');
   }
-  await user.deleteOne();
+  user.isDeleted = true;
+  user.deletedAt = new Date();
+  await user.save();
   return user;
 };
 

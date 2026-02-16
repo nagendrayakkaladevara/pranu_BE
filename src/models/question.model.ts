@@ -25,6 +25,7 @@ export interface IQuestion extends Document {
     subject: string;
     topic?: string;
     options: IOption[];
+    createdBy: mongoose.Types.ObjectId;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -63,6 +64,11 @@ const questionSchema = new Schema<IQuestion>(
         topic: {
             type: String,
             trim: true,
+        },
+        createdBy: {
+            type: Schema.Types.ObjectId,
+            ref: 'User',
+            required: true,
         },
         options: [optionSchema],
     },

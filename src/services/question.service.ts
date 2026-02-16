@@ -1,17 +1,10 @@
-
 import httpStatus from 'http-status';
 import Question from '../models/question.model';
 import { ApiError } from '../middlewares/error';
 
-/**
- * Create a question
- * @param {Object} questionBody
- * @returns {Promise<Question>}
- */
 const createQuestion = async (questionBody: any) => {
   const { options } = questionBody;
 
-  // Verify at least one correct option exists for MCQ if options provided
   if (options && options.length > 0 && !options.some((opt: any) => opt.isCorrect)) {
     throw new ApiError(httpStatus.BAD_REQUEST, 'At least one option must be correct');
   }
@@ -19,14 +12,14 @@ const createQuestion = async (questionBody: any) => {
   return Question.create(questionBody);
 };
 
-/**
- * Query for questions
- * @param {Object} filter - Filter
- * @param {Object} options - Query options
- * @returns {Promise<Object>}
- */
-const queryQuestions = async (filter: any, options: any) => {
+const queryQuestions = async (filter: any, options: any, userId: string, userRole: string) => {
   const where: any = {};
+
+  // Lecturers only see their own questions; Admins see all
+  if (userRole === 'LECTURER') {
+    where.createdBy = userId;
+  }
+
   if (filter.subject) where.subject = { $regex: filter.subject, $options: 'i' };
   if (filter.topic) where.topic = { $regex: filter.topic, $options: 'i' };
   if (filter.difficulty) where.difficulty = filter.difficulty;
@@ -53,25 +46,19 @@ const queryQuestions = async (filter: any, options: any) => {
   return { questions, page, limit, totalPages, totalResults };
 };
 
-/**
- * Get question by id
- * @param {string} id
- * @returns {Promise<Question>}
- */
 const getQuestionById = async (id: string) => {
   return Question.findById(id);
 };
 
-/**
- * Update question by id
- * @param {string} questionId
- * @param {Object} updateBody
- * @returns {Promise<Question>}
- */
-const updateQuestionById = async (questionId: string, updateBody: any) => {
+const updateQuestionById = async (questionId: string, updateBody: any, userId: string, userRole: string) => {
   const question = await getQuestionById(questionId);
   if (!question) {
     throw new ApiError(httpStatus.NOT_FOUND, 'Question not found');
+  }
+
+  // Lecturers can only update their own questions
+  if (userRole === 'LECTURER' && question.createdBy.toString() !== userId) {
+    throw new ApiError(httpStatus.FORBIDDEN, 'You can only update your own questions');
   }
 
   if (updateBody.options) {
@@ -85,16 +72,18 @@ const updateQuestionById = async (questionId: string, updateBody: any) => {
   return question;
 };
 
-/**
- * Delete question by id
- * @param {string} questionId
- * @returns {Promise<Question>}
- */
-const deleteQuestionById = async (questionId: string) => {
-  const question = await Question.findByIdAndDelete(questionId);
+const deleteQuestionById = async (questionId: string, userId: string, userRole: string) => {
+  const question = await getQuestionById(questionId);
   if (!question) {
     throw new ApiError(httpStatus.NOT_FOUND, 'Question not found');
   }
+
+  // Lecturers can only delete their own questions
+  if (userRole === 'LECTURER' && question.createdBy.toString() !== userId) {
+    throw new ApiError(httpStatus.FORBIDDEN, 'You can only delete your own questions');
+  }
+
+  await question.deleteOne();
   return question;
 };
 

@@ -23,6 +23,7 @@ const queryClasses = async (filter: any, options: any) => {
   const where: any = {};
   if (filter.name) where.name = { $regex: filter.name, $options: 'i' };
   if (filter.department) where.department = { $regex: filter.department, $options: 'i' };
+  if (filter.studentId) where.students = filter.studentId;
 
   const page = options.page ?? 1;
   const limit = options.limit ?? 10;

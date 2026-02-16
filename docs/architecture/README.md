@@ -9,22 +9,32 @@ The ECQES backend follows a **Layered Architecture** (Controller-Service-Reposit
 - **Runtime**: Node.js (v18+)
 - **Framework**: Express.js
 - **Language**: TypeScript (Strict)
-- **Database**: PostgreSQL (Prisma ORM)
+- **Database**: MongoDB (Mongoose ODM)
 - **Validation**: Zod
-- **Auth**: JWT (JSON Web Tokens)
+- **Auth**: JWT (Access + Refresh Tokens)
+- **Security**: Helmet, XSS sanitization, Rate limiting
 
 ## Data Flow
 
-`Request` -> `Middleware (Auth/Validation)` -> `Controller` -> `Service` -> `Prisma Client` -> `Database`
+`Request` -> `Rate Limiter` -> `Sanitization` -> `Middleware (Auth/Validation)` -> `Controller` -> `Service` -> `Mongoose Model` -> `MongoDB`
 
 ## Database Schema (Mental Model)
 
-- **Users**: Can be ADMIN, LECTURER, or STUDENT.
-- **Classes**: Group Students. link Lecturers.
-- **Questions**: Bank of questions (MCQ).
+- **Users**: Can be ADMIN, LECTURER, or STUDENT. Supports soft-delete.
+- **Tokens**: Stores refresh tokens for session management.
+- **Classes**: Group Students. Link Lecturers.
+- **Questions**: Bank of questions (MCQ and SUBJECTIVE).
 - **Quizzes**: Collections of questions, assigned to Classes.
-- **QuizAttempts**: Tracks the Student's session of a Quiz.
-- **StudentResponses**: Detailed answers for analytics.
+- **QuizAttempts**: Tracks the Student's session of a Quiz with auto-expiration.
+
+## Security Layers
+
+1. **Helmet**: Security HTTP headers
+2. **Rate Limiting**: Global (100 req/15min) + Auth-specific (20 req/15min)
+3. **XSS Sanitization**: All request data (body, query, params) sanitized
+4. **Body Size Limit**: 1MB max request payload
+5. **JWT Auth**: Access tokens (30min) + Refresh tokens (30 days)
+6. **RBAC**: Role-based access control (ADMIN, LECTURER, STUDENT)
 
 ## Folder Structure
 
@@ -32,12 +42,13 @@ The ECQES backend follows a **Layered Architecture** (Controller-Service-Reposit
 src/
 ├── config/         # Environment variables & Logger config
 ├── controllers/    # API Controllers (Req/Res handling)
-├── middlewares/    # Express Interceptors (Auth, Validate, Error)
+├── middlewares/     # Express Interceptors (Auth, Validate, Error, RateLimiter, Sanitize)
+├── models/         # Mongoose Schemas & Interfaces
 ├── routes/         # Router Definitions
 ├── services/       # Business Logic (Complex calculations, DB calls)
 ├── utils/          # Helpers (catchAsync, constants)
 ├── validations/    # Zod Schemas for input validation
 ├── app.ts          # Express App Setup
 ├── server.ts       # Server Entry Point
-└── client.ts       # Prisma Client Instance
+└── seed.ts         # Admin user seeding
 ```

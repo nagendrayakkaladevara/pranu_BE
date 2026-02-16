@@ -1,20 +1,32 @@
 import { z } from 'zod';
 
-// Validate get quiz results params
 const getQuizResults = {
   params: z.object({
     quizId: z.string(),
   }),
 };
 
-// Validate get student stats params
 const getStudentStats = {
   params: z.object({
     studentId: z.string(),
   }),
 };
 
+const getQuestionAnalysis = {
+  params: z.object({
+    quizId: z.string(),
+  }),
+};
+
+const getDifficultyAnalysis = {
+  params: z.object({
+    quizId: z.string(),
+  }),
+};
+
 export default {
   getQuizResults,
   getStudentStats,
+  getQuestionAnalysis,
+  getDifficultyAnalysis,
 };

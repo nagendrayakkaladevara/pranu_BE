@@ -19,10 +19,14 @@ const createClass = catchAsync(async (req: Request, res: Response) => {
  * @param res Response object to send list of classes
  */
 const getClasses = catchAsync(async (req: Request, res: Response) => {
-  const filter = {
+  const filter: any = {
     name: req.query.name ? String(req.query.name) : undefined,
     department: req.query.department ? String(req.query.department) : undefined,
   };
+  // Students only see classes they belong to
+  if (req.user.role === 'STUDENT') {
+    filter.studentId = req.user.id;
+  }
   const options = {
     limit: Number(req.query.limit) || 10,
     page: Number(req.query.page) || 1,
