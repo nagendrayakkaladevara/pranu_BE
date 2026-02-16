@@ -1,74 +1,115 @@
-# Pending Implementation Specifications
+# Implementation Specifications
 
-This document outlines the specific requirements and API specifications for the remaining modules of the ECQES system.
+This document outlines the implemented modules and their API specifications for the ECQES system.
 
-## 1. User Management Module (Admin Only)
+## 1. Authentication Module
 
-**Goal**: Allow admins to manage lecturers and students.
+**Status**: Fully implemented
+
+- **Endpoints**:
+  - `POST /v1/auth/register`: Create a new user account. Returns user + access & refresh tokens.
+  - `POST /v1/auth/login`: Authenticate user. Returns user + access & refresh tokens.
+  - `POST /v1/auth/logout`: Revoke refresh token. Body: `{ "refreshToken": "..." }`. Returns 204.
+  - `POST /v1/auth/refresh-tokens`: Get new token pair. Body: `{ "refreshToken": "..." }`. Returns user + new tokens.
+- **Security**:
+  - Access tokens expire in 30 minutes (configurable via `JWT_ACCESS_EXPIRATION_MINUTES`)
+  - Refresh tokens expire in 30 days (configurable via `JWT_REFRESH_EXPIRATION_DAYS`)
+  - Refresh tokens stored in DB and deleted on logout/refresh (rotation)
+  - Auth endpoints rate-limited to 20 requests per 15 minutes
+
+## 2. User Management Module (Admin Only)
+
+**Status**: Fully implemented
 
 - **Endpoints**:
   - `POST /v1/users`: Create a user (Admin/Lecturer/Student).
-  - `GET /v1/users`: List users with pagination and role filtering.
+  - `GET /v1/users`: List users with pagination and role filtering. Soft-deleted users excluded.
   - `GET /v1/users/:userId`: Get user details.
   - `PATCH /v1/users/:userId`: Update user details.
-  - `DELETE /v1/users/:userId`: Soft delete/deactivate user.
-- **Validation**: Ensure email uniqueness, valid role.
+  - `DELETE /v1/users/:userId`: Soft-delete user (sets `isDeleted: true`, `deletedAt` timestamp).
+- **Validation**: Email uniqueness, valid role, min 8-char password.
 
-## 2. Class Management Module (Admin Only)
+## 3. Class Management Module (Admin Only)
 
-**Goal**: Organize students into classes and assign lecturers.
+**Status**: Fully implemented
 
 - **Endpoints**:
-  - `POST /v1/classes`: Create a new class (e.g., "CSE-3A").
-  - `GET /v1/classes`: List classes.
-  - `GET /v1/classes/:classId`: Get class details (incl. student/lecturer counts).
+  - `POST /v1/classes`: Create a new class.
+  - `GET /v1/classes`: List classes with pagination.
+  - `GET /v1/classes/:classId`: Get class details (includes populated students/lecturers).
+  - `PATCH /v1/classes/:classId`: Update class.
+  - `DELETE /v1/classes/:classId`: Delete class.
   - `POST /v1/classes/:classId/students`: Bulk assign students to a class.
-  - `POST /v1/classes/:classId/lecturers`: Assign a lecturer to a class.
-- **Logic**: A student can belong to multiple classes (electives).
+  - `POST /v1/classes/:classId/lecturers`: Assign lecturers to a class.
+- **Logic**: Uses `$addToSet` to prevent duplicate assignments.
 
-## 3. Question Bank Module (Lecturer)
+## 4. Question Bank Module (Lecturer/Admin)
 
-**Goal**: Create a repository of questions for quizzes.
+**Status**: Fully implemented
 
 - **Endpoints**:
-  - `POST /v1/questions`: Create a question.
+  - `POST /v1/questions`: Create a question (MCQ or SUBJECTIVE).
   - `GET /v1/questions`: List questions (filter by subject, topic, difficulty).
+  - `GET /v1/questions/:questionId`: Get question details.
   - `PATCH /v1/questions/:questionId`: Update question.
   - `DELETE /v1/questions/:questionId`: Delete question.
 - **Specs**:
-  - Support MCQ type initially.
-  - options must be provided for MCQs.
+  - Supports MCQ and SUBJECTIVE question types.
+  - Options required for MCQ, at least one must be correct.
 
-## 4. Quiz Management Module (Lecturer)
+## 5. Quiz Management Module (Lecturer/Admin)
 
-**Goal**: Create and publish quizzes.
+**Status**: Fully implemented
 
 - **Endpoints**:
-  - `POST /v1/quizzes`: Create a quiz draft (metadata like title, duration).
-  - `POST /v1/quizzes/:quizId/questions`: Add questions to the quiz.
-  - `PATCH /v1/quizzes/:quizId/publish`: Publish quiz (set status to PUBLISHED).
-  - `GET /v1/quizzes`: List quizzes created by the lecturer.
+  - `POST /v1/quizzes`: Create a quiz draft.
+  - `GET /v1/quizzes`: List quizzes with pagination and filters.
+  - `GET /v1/quizzes/:quizId`: Get quiz details with populated questions and classes.
+  - `PATCH /v1/quizzes/:quizId`: Update quiz.
+  - `DELETE /v1/quizzes/:quizId`: Delete quiz.
+  - `POST /v1/quizzes/:quizId/questions`: Add questions to quiz.
+  - `POST /v1/quizzes/:quizId/publish`: Publish quiz to classes. Requires questions, startTime, endTime.
+
+## 6. Quiz Attempt Module (Student)
+
+**Status**: Fully implemented (MCQ auto-scored + subjective pending grading)
+
+- **Endpoints**:
+  - `GET /v1/exam/quizzes`: List available quizzes for student (class-based, time-window filtered).
+  - `POST /v1/exam/quizzes/:quizId/start`: Start attempt. Returns sanitized questions (MCQ options without `isCorrect`, SUBJECTIVE with empty options).
+  - `POST /v1/exam/attempts/:attemptId/submit`: Submit answers. MCQ uses `selectedOptionId`, SUBJECTIVE uses `textAnswer`. MCQ auto-scored, response includes `pendingGrading` flag.
 - **Logic**:
-  - Validate total marks matches sum of question marks.
-  - Ensure start time < end time.
+  - Validates student class enrollment and quiz time window.
+  - Auto-expires stale attempts (quiz endTime passed or duration exceeded).
+  - Prevents duplicate submissions and expired attempt submissions.
 
-## 5. Quiz Attempt Module (Student)
+## 7. Grading Module (Lecturer/Admin)
 
-**Goal**: Allow students to take exams.
-
-- **Endpoints**:
-  - `GET /v1/exam/quizzes`: List available quizzes for the student (based on class assignment).
-  - `POST /v1/exam/quizzes/:quizId/start`: Start an attempt (returns questions without correct answers).
-  - `POST /v1/exam/attempts/:attemptId/submit`: Submit answers & finish.
-- **Logic**:
-  - Validate student belongs to the class assigned to the quiz.
-  - Check current time is within quiz start/end time.
-  - Calculate score immediately upon submission (for objective type).
-
-## 6. Analytics Module (Admin & Lecturer)
-
-**Goal**: View performance.
+**Status**: Fully implemented
 
 - **Endpoints**:
-  - `GET /v1/analytics/results/:quizId`: Get all student results for a quiz.
-  - `GET /v1/analytics/student/:studentId`: Get performance history for a student.
+  - `POST /v1/exam/attempts/:attemptId/grade`: Grade subjective responses.
+    - Body: `{ "grades": [{ "questionId": "...", "awardedMarks": 5 }] }`
+    - Validates marks don't exceed question marks.
+    - Returns grading status (`allGraded` flag) and updated score.
+
+## 8. Analytics Module (Lecturer/Admin)
+
+**Status**: Fully implemented
+
+- **Endpoints**:
+  - `GET /v1/analytics/results/:quizId`: Quiz results with stats (average, highest, lowest, pass/fail rate, all student results).
+  - `GET /v1/analytics/student/:studentId`: Student performance history with summary (averagePercentage, quizzesPassed/Failed).
+  - `GET /v1/analytics/questions/:quizId`: Per-question analysis (attemptedCount, correctCount, correctRate, averageMarks).
+  - `GET /v1/analytics/difficulty/:quizId`: Difficulty-wise performance breakdown (correctRate, averageScore per difficulty level).
+
+## 9. Security & Infrastructure
+
+**Status**: Fully implemented
+
+- **Rate Limiting**: 100 req/15min general (production), 20 req/15min for auth endpoints.
+- **XSS Sanitization**: All request data (body, query, params) sanitized via `xss` library.
+- **Body Size Limit**: 1MB maximum request payload.
+- **Helmet**: Security HTTP headers.
+- **CORS**: Enabled for all origins.
+- **Error Handling**: Custom `ApiError` class, error converter, environment-aware stack traces.

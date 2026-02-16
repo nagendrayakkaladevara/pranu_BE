@@ -4,6 +4,8 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import httpStatus from 'http-status';
 import { errorHandler, errorConverter } from './middlewares/error';
+import { generalLimiter } from './middlewares/rateLimiter';
+import sanitize from './middlewares/sanitize';
 import routes from './routes';
 import config from './config/config';
 
@@ -16,15 +18,23 @@ if (config.env !== 'test') {
 // set security HTTP headers
 app.use(helmet());
 
-// parse json request body
-app.use(express.json());
+// parse json request body (limit payload size)
+app.use(express.json({ limit: '1mb' }));
 
 // parse urlencoded request body
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 // enable cors
 app.use(cors());
 app.options('*', cors());
+
+// sanitize request data (XSS protection)
+app.use(sanitize);
+
+// apply rate limiting
+if (config.env === 'production') {
+  app.use(generalLimiter);
+}
 
 // health check
 app.get('/health', (req: Request, res: Response) => {

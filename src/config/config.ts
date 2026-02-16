@@ -11,6 +11,7 @@ const envSchema = z.object({
     DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
     JWT_SECRET: z.string().min(1, 'JWT_SECRET is required'),
     JWT_ACCESS_EXPIRATION_MINUTES: z.coerce.number().default(30),
+    JWT_REFRESH_EXPIRATION_DAYS: z.coerce.number().default(30),
 });
 
 const envVars = envSchema.safeParse(process.env);
@@ -33,5 +34,6 @@ export default {
     jwt: {
         secret: envVars.data.JWT_SECRET,
         accessExpirationMinutes: envVars.data.JWT_ACCESS_EXPIRATION_MINUTES,
+        refreshExpirationDays: envVars.data.JWT_REFRESH_EXPIRATION_DAYS,
     },
 };

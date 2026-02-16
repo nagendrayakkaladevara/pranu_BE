@@ -9,20 +9,30 @@
 All endpoints except `/auth/*` and `/health` require a Bearer Token.
 Header: `Authorization: Bearer <token>`
 
+Tokens: Login/Register return both access (30min) and refresh (30 days) tokens. Use the refresh token to obtain new tokens when the access token expires.
+
+## Rate Limiting
+
+- **General**: 100 requests per 15 minutes (production only)
+- **Auth endpoints**: 20 requests per 15 minutes
+- Returns `429` with `{ "message": "Too many requests, please try again later." }`
+
 ## Modules
 
 ### 1. Authentication
 
-- `POST /auth/register`: Register a new user (`ADMIN` role creation might need restriction in real world).
-- `POST /auth/login`: Login to receive JWT token.
+- `POST /auth/register`: Register a new user. Returns user + access & refresh tokens.
+- `POST /auth/login`: Login to receive access & refresh tokens.
+- `POST /auth/logout`: Revoke a refresh token. Body: `{ "refreshToken": "..." }`. Returns 204.
+- `POST /auth/refresh-tokens`: Get new token pair. Body: `{ "refreshToken": "..." }`. Returns user + new tokens.
 
 ### 2. User Management (Admin Only)
 
 - `POST /users`: Create User (Lecturer/Student).
-- `GET /users`: List Users (Allows filtering by role, name).
+- `GET /users`: List Users (allows filtering by role, name). Soft-deleted users are excluded.
 - `GET /users/:userId`: Get User Details.
 - `PATCH /users/:userId`: Update User.
-- `DELETE /users/:userId`: Delete User.
+- `DELETE /users/:userId`: Soft-delete User (sets `isDeleted: true`, `deletedAt` timestamp).
 
 ### 3. Class Management (Admin Only)
 
@@ -36,7 +46,7 @@ Header: `Authorization: Bearer <token>`
 
 ### 4. Question Bank (Lecturer/Admin)
 
-- `POST /questions`: Create Question (MCQ).
+- `POST /questions`: Create Question (MCQ or SUBJECTIVE).
 - `GET /questions`: List Questions.
 - `GET /questions/:questionId`: Get Question Details.
 - `PATCH /questions/:questionId`: Update Question.
@@ -54,11 +64,24 @@ Header: `Authorization: Bearer <token>`
 
 ### 6. Examination (Student)
 
-- `GET /exam/quizzes`: List active/upcoming quizzes.
-- `POST /exam/quizzes/:quizId/start`: Start a quiz attempt.
-- `POST /exam/attempts/:attemptId/submit`: Submit exam answers.
+- `GET /exam/quizzes`: List active/upcoming quizzes for the student.
+- `POST /exam/quizzes/:quizId/start`: Start a quiz attempt. Returns questions (MCQ options without answers, SUBJECTIVE with empty options).
+- `POST /exam/attempts/:attemptId/submit`: Submit answers (MCQ: `selectedOptionId`, SUBJECTIVE: `textAnswer`). MCQ auto-scored, subjective pending grading.
 
-### 7. Analytics (Lecturer/Admin)
+### 7. Grading (Lecturer/Admin)
 
-- `GET /analytics/results/:quizId`: View quiz performance stats.
-- `GET /analytics/student/:studentId`: View individual student history.
+- `POST /exam/attempts/:attemptId/grade`: Grade subjective responses. Body: `{ "grades": [{ "questionId": "...", "awardedMarks": 5 }] }`.
+
+### 8. Analytics (Lecturer/Admin)
+
+- `GET /analytics/results/:quizId`: Quiz performance stats (average, highest, lowest, pass/fail rate).
+- `GET /analytics/student/:studentId`: Student history with summary stats.
+- `GET /analytics/questions/:quizId`: Per-question analysis (correctRate, averageMarks, difficulty).
+- `GET /analytics/difficulty/:quizId`: Difficulty-wise performance breakdown.
+
+## Security
+
+- All inputs sanitized against XSS attacks
+- Request body size limited to 1MB
+- Helmet security headers enabled
+- CORS enabled

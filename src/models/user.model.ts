@@ -14,6 +14,8 @@ export interface IUser extends Document {
     name: string;
     role: Role;
     isActive: boolean;
+    isDeleted: boolean;
+    deletedAt?: Date;
     createdAt: Date;
     updatedAt: Date;
     isPasswordMatch(password: string): Promise<boolean>;
@@ -50,15 +52,23 @@ const userSchema = new Schema<IUser>(
             type: Boolean,
             default: true,
         },
+        isDeleted: {
+            type: Boolean,
+            default: false,
+        },
+        deletedAt: {
+            type: Date,
+            default: null,
+        },
     },
     {
         timestamps: true,
     }
 );
 
-// Check if email is taken
+// Check if email is taken (excludes soft-deleted users)
 userSchema.statics.isEmailTaken = async function (email: string, excludeUserId?: string) {
-    const user = await this.findOne({ email, _id: { $ne: excludeUserId } });
+    const user = await this.findOne({ email, _id: { $ne: excludeUserId }, isDeleted: { $ne: true } });
     return !!user;
 };
 

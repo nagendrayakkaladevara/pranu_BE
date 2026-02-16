@@ -15,7 +15,11 @@ const router = express.Router();
 router
   .route('/')
   .post(auth('ADMIN'), validate(classValidation.createClass), classController.createClass)
-  .get(auth('ADMIN', 'LECTURER'), validate(classValidation.getClasses), classController.getClasses);
+  .get(
+    auth('ADMIN', 'LECTURER', 'STUDENT'),
+    validate(classValidation.getClasses),
+    classController.getClasses,
+  );
 
 // Route: GET /v1/classes/:classId
 // Description: Get class details including students and lecturers

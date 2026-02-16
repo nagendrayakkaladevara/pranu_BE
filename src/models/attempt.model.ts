@@ -10,6 +10,9 @@ export enum AttemptStatus {
 export interface IResponse {
     questionId: mongoose.Types.ObjectId;
     selectedOptionId?: mongoose.Types.ObjectId;
+    textAnswer?: string;
+    awardedMarks?: number;
+    isGraded: boolean;
 }
 
 export interface IQuizAttempt extends Document {
@@ -33,6 +36,16 @@ const responseSchema = new Schema<IResponse>(
         },
         selectedOptionId: {
             type: Schema.Types.ObjectId,
+        },
+        textAnswer: {
+            type: String,
+        },
+        awardedMarks: {
+            type: Number,
+        },
+        isGraded: {
+            type: Boolean,
+            default: false,
         },
     },
     { _id: false }

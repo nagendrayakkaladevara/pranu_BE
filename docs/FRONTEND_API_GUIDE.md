@@ -7,14 +7,19 @@ Complete API reference for the frontend team. All endpoints are prefixed with `/
 ## Table of Contents
 
 - [Authentication](#authentication)
+- [Profile (All Roles)](#profile-all-roles)
 - [Users (Admin)](#users-admin-only)
 - [Classes](#classes)
 - [Questions (Lecturer/Admin)](#questions-lectureadmin)
 - [Quizzes (Lecturer/Admin)](#quizzes-lectureadmin)
 - [Exam (Student)](#exam-student-only)
+- [Student Stats](#student-stats)
+- [Attempts (All Roles)](#attempts-all-roles)
+- [Grading (Lecturer/Admin)](#grading-lectureadmin)
 - [Analytics (Lecturer/Admin)](#analytics-lectureadmin)
 - [Data Models](#data-models)
 - [Pagination](#pagination)
+- [Rate Limiting](#rate-limiting)
 - [Error Responses](#error-responses)
 
 ---
@@ -63,6 +68,10 @@ Create a new account. No auth required.
     "access": {
       "token": "eyJhbGciOiJIUzI1NiIs...",
       "expires": "2026-01-15T11:00:00.000Z"
+    },
+    "refresh": {
+      "token": "eyJhbGciOiJIUzI1NiIs...",
+      "expires": "2026-02-14T10:30:00.000Z"
     }
   }
 }
@@ -80,7 +89,114 @@ Authenticate an existing user. No auth required.
 }
 ```
 
-**Response** `200`: Same shape as register response.
+**Response** `200`: Same shape as register response (includes both access and refresh tokens).
+
+### POST /v1/auth/logout
+
+Invalidate a refresh token. No auth required.
+
+**Body:**
+```json
+{
+  "refreshToken": "eyJhbGciOiJIUzI1NiIs..."
+}
+```
+
+| Field | Type | Required |
+| :--- | :--- | :--- |
+| `refreshToken` | string | Yes |
+
+**Response** `204`: No content.
+
+### POST /v1/auth/refresh-tokens
+
+Get new access and refresh tokens using a valid refresh token. No auth required.
+
+**Body:**
+```json
+{
+  "refreshToken": "eyJhbGciOiJIUzI1NiIs..."
+}
+```
+
+| Field | Type | Required |
+| :--- | :--- | :--- |
+| `refreshToken` | string | Yes |
+
+**Response** `200`:
+```json
+{
+  "user": {
+    "id": "665a1b2c3d4e5f6a7b8c9d0e",
+    "email": "user@example.com",
+    "name": "John Doe",
+    "role": "STUDENT",
+    "isActive": true,
+    "createdAt": "2026-01-15T10:30:00.000Z",
+    "updatedAt": "2026-01-15T10:30:00.000Z"
+  },
+  "tokens": {
+    "access": {
+      "token": "eyJhbGciOiJIUzI1NiIs...",
+      "expires": "2026-01-15T11:30:00.000Z"
+    },
+    "refresh": {
+      "token": "eyJhbGciOiJIUzI1NiIs...",
+      "expires": "2026-02-14T11:00:00.000Z"
+    }
+  }
+}
+```
+
+**Token Expiration:**
+- Access tokens expire in **30 minutes** (default).
+- Refresh tokens expire in **30 days** (default).
+
+**Recommended frontend flow:**
+1. On login/register, store both tokens.
+2. Use the access token for API requests.
+3. When a request returns `401`, call `/v1/auth/refresh-tokens` with the stored refresh token.
+4. Replace both stored tokens with the new ones from the response.
+5. On logout, call `/v1/auth/logout` with the refresh token and clear stored tokens.
+
+> **Note:** Auth endpoints (register, login, logout, refresh) have stricter rate limiting (20 requests per 15 minutes). The `/me` endpoints use standard rate limiting. See [Rate Limiting](#rate-limiting).
+
+---
+
+## Profile (All Roles)
+
+Self-service profile endpoints for any authenticated user.
+
+### GET /v1/auth/me
+
+**Auth:** Any authenticated user
+
+Get the logged-in user's profile.
+
+**Response** `200`: User object (same shape as register response's `user` field).
+
+### PATCH /v1/auth/me
+
+**Auth:** Any authenticated user
+
+Update the logged-in user's own profile. Users cannot change their own role.
+
+**Body** (at least one field):
+```json
+{
+  "name": "New Name",
+  "email": "newemail@example.com",
+  "password": "newpassword123"
+}
+```
+
+| Field | Type | Required | Notes |
+| :--- | :--- | :--- | :--- |
+| `name` | string | No | |
+| `email` | string | No | Valid email format, must be unique |
+| `password` | string | No | Min 8 characters |
+
+**Response** `200`: Updated user object.
 
 ---
 
@@ -132,6 +248,8 @@ All endpoints require `Authorization: Bearer <adminToken>`.
 }
 ```
 
+> **Note:** Soft-deleted users are automatically filtered out from all query results.
+
 ### GET /v1/users/:userId
 
 **Response** `200`: User object.
@@ -152,6 +270,8 @@ All endpoints require `Authorization: Bearer <adminToken>`.
 **Response** `200`: Updated user object.
 
 ### DELETE /v1/users/:userId
+
+Soft-deletes the user. The user record is not physically removed from the database; instead, `isDeleted` is set to `true` and `deletedAt` is set to the current timestamp. Soft-deleted users are automatically excluded from all queries.
 
 **Response** `204`: No content.
 
@@ -182,7 +302,9 @@ All endpoints require `Authorization: Bearer <adminToken>`.
 **Response** `201`: Class object.
 
 ### GET /v1/classes
-**Auth:** ADMIN or LECTURER
+**Auth:** ADMIN, LECTURER, or STUDENT
+
+> **Role-based filtering:** Students only see classes they are enrolled in. Admins and Lecturers see all classes.
 
 **Query Parameters:**
 
@@ -386,6 +508,8 @@ Creates a quiz in `DRAFT` status.
 
 ### GET /v1/quizzes
 
+> **Role-based filtering:** Lecturers see only quizzes they created. Admins see all quizzes.
+
 **Query Parameters:**
 
 | Param | Type | Notes |
@@ -518,17 +642,23 @@ All endpoints require auth with `STUDENT` role.
 
 List quizzes available for the logged-in student. Returns published quizzes assigned to the student's enrolled classes and within the active time window.
 
+> **Note:** Stale attempts (where the quiz `endTime` has passed or the attempt duration has exceeded the quiz `durationMinutes`) are automatically expired when listing quizzes.
+
 **Response** `200`: Array of quiz objects.
 
 ### POST /v1/exam/quizzes/:quizId/start
 
 Start a quiz attempt. Returns sanitized questions (without correct answers).
 
+For `SUBJECTIVE` type questions, the `options` array will be empty.
+
+> **Note:** Stale attempts for the quiz are automatically expired before starting a new attempt.
+
 **Errors:**
-- `400` "Quiz is not active" — quiz not published
-- `400` "Quiz has not started yet" — before startTime
-- `400` "Quiz has expired" — after endTime
-- `400` "You have already submitted this quiz" — already submitted
+- `400` "Quiz is not active" -- quiz not published
+- `400` "Quiz has not started yet" -- before startTime
+- `400` "Quiz has expired" -- after endTime
+- `400` "You have already submitted this quiz" -- already submitted
 
 **Response** `200`:
 ```json
@@ -554,6 +684,13 @@ Start a quiz attempt. Returns sanitized questions (without correct answers).
         { "id": "665c02...", "text": "4" },
         { "id": "665c03...", "text": "5" }
       ]
+    },
+    {
+      "id": "665d...",
+      "text": "Explain the concept of polymorphism.",
+      "type": "SUBJECTIVE",
+      "marks": 5,
+      "options": []
     }
   ]
 }
@@ -561,32 +698,228 @@ Start a quiz attempt. Returns sanitized questions (without correct answers).
 
 ### POST /v1/exam/attempts/:attemptId/submit
 
-Submit answers for a quiz attempt.
+Submit answers for a quiz attempt. Supports both MCQ and SUBJECTIVE question types.
 
 **Body:**
 ```json
 {
   "responses": [
     { "questionId": "665b...", "selectedOptionId": "665c02..." },
-    { "questionId": "665d...", "selectedOptionId": "665e01..." }
+    { "questionId": "665d...", "textAnswer": "Polymorphism is the ability of..." }
   ]
 }
 ```
 
-| Field | Type | Required |
-| :--- | :--- | :--- |
-| `responses` | array | Yes |
-| `responses[].questionId` | string | Yes |
-| `responses[].selectedOptionId` | string | Yes |
+| Field | Type | Required | Notes |
+| :--- | :--- | :--- | :--- |
+| `responses` | array | Yes | |
+| `responses[].questionId` | string | Yes | |
+| `responses[].selectedOptionId` | string | Conditional | Required for MCQ questions |
+| `responses[].textAnswer` | string | Conditional | Required for SUBJECTIVE questions |
+
+**Errors:**
+- `400` "Attempt has expired" -- attempt auto-expired due to time limit
 
 **Response** `200`:
 ```json
 {
   "message": "Quiz submitted successfully",
   "score": 8,
-  "totalMarks": 10
+  "totalMarks": 10,
+  "pendingGrading": true
 }
 ```
+
+The `pendingGrading` flag is `true` when the quiz contains SUBJECTIVE questions that still need to be graded by a lecturer or admin. The `score` reflects only the MCQ questions scored so far; it will update once subjective questions are graded.
+
+---
+
+## Student Stats
+
+### GET /v1/exam/my-stats
+
+**Auth:** STUDENT only
+
+Get the logged-in student's own performance summary and attempt history across all quizzes.
+
+**Response** `200`:
+```json
+{
+  "student": {
+    "id": "665g...",
+    "name": "Student Name",
+    "email": "student@example.com"
+  },
+  "summary": {
+    "totalAttempts": 5,
+    "averagePercentage": 76.40,
+    "quizzesPassed": 4,
+    "quizzesFailed": 1
+  },
+  "attempts": [
+    {
+      "id": "665f...",
+      "quizTitle": "Math Quiz 1",
+      "score": 8,
+      "totalMarks": 10,
+      "percentage": 80.00,
+      "passed": true,
+      "date": "2026-03-01T10:45:00.000Z"
+    }
+  ]
+}
+```
+
+Attempts are sorted by date (most recent first). `passed` is `null` if the quiz has no `passMarks` set.
+
+---
+
+## Attempts (All Roles)
+
+### GET /v1/exam/attempts
+
+**Auth:** STUDENT, LECTURER, or ADMIN
+
+**Role-based scoping:**
+- **STUDENT**: sees only their own attempts
+- **LECTURER**: sees attempts for quizzes they created
+- **ADMIN**: sees all attempts
+
+**Query Parameters:**
+
+| Param | Type | Notes |
+| :--- | :--- | :--- |
+| `page` | number | Default: 1 |
+| `limit` | number | Default: 10 |
+| `sortBy` | string | Format: `field:asc` or `field:desc` (e.g., `submittedAt:desc`) |
+| `quizId` | string | Filter by quiz ID |
+| `studentId` | string | Filter by student ID (LECTURER/ADMIN only, ignored for STUDENT) |
+| `status` | string | `STARTED`, `SUBMITTED`, `EXPIRED` |
+
+**Response** `200`:
+```json
+{
+  "attempts": [
+    {
+      "id": "665f...",
+      "quiz": {
+        "id": "665a...",
+        "title": "Math Quiz 1",
+        "totalMarks": 10,
+        "passMarks": 5,
+        "durationMinutes": 30
+      },
+      "student": {
+        "id": "665g...",
+        "name": "Student Name",
+        "email": "student@example.com"
+      },
+      "status": "SUBMITTED",
+      "score": 8,
+      "startTime": "2026-03-01T09:05:00.000Z",
+      "endTime": "2026-03-01T09:35:00.000Z",
+      "responses": [ ... ],
+      "createdAt": "...",
+      "updatedAt": "..."
+    }
+  ],
+  "page": 1,
+  "limit": 10,
+  "totalPages": 3,
+  "totalResults": 25
+}
+```
+
+### GET /v1/exam/attempts/:attemptId
+
+**Auth:** STUDENT, LECTURER, or ADMIN
+
+Get a single attempt by ID with populated quiz and student details.
+
+**Role-based access:**
+- **STUDENT**: can only view their own attempts
+- **LECTURER**: can only view attempts for quizzes they created
+- **ADMIN**: can view any attempt
+
+**Response** `200`:
+```json
+{
+  "id": "665f...",
+  "quiz": {
+    "id": "665a...",
+    "title": "Math Quiz 1",
+    "totalMarks": 10,
+    "passMarks": 5,
+    "durationMinutes": 30
+  },
+  "student": {
+    "id": "665g...",
+    "name": "Student Name",
+    "email": "student@example.com"
+  },
+  "status": "SUBMITTED",
+  "score": 8,
+  "startTime": "2026-03-01T09:05:00.000Z",
+  "endTime": "2026-03-01T09:35:00.000Z",
+  "responses": [
+    {
+      "questionId": "665b...",
+      "selectedOptionId": "665c02...",
+      "isGraded": true,
+      "awardedMarks": 1
+    }
+  ],
+  "createdAt": "...",
+  "updatedAt": "..."
+}
+```
+
+**Errors:**
+- `403` "You can only view your own attempts" (STUDENT accessing another student's attempt)
+- `403` "You can only view attempts for your own quizzes" (LECTURER accessing another lecturer's quiz attempt)
+
+---
+
+## Grading (Lecturer/Admin)
+
+All endpoints require auth with `LECTURER` or `ADMIN` role.
+
+### POST /v1/exam/attempts/:attemptId/grade
+
+Grade subjective questions for a submitted quiz attempt.
+
+**Body:**
+```json
+{
+  "grades": [
+    { "questionId": "665d...", "awardedMarks": 5 },
+    { "questionId": "665e...", "awardedMarks": 3 }
+  ]
+}
+```
+
+| Field | Type | Required | Notes |
+| :--- | :--- | :--- | :--- |
+| `grades` | array | Yes | |
+| `grades[].questionId` | string | Yes | ID of the subjective question |
+| `grades[].awardedMarks` | number | Yes | Marks awarded for the response |
+
+**Response** `200`:
+```json
+{
+  "message": "All responses graded",
+  "score": 8,
+  "totalMarks": 10,
+  "allGraded": true
+}
+```
+
+| Field | Type | Notes |
+| :--- | :--- | :--- |
+| `message` | string | `"All responses graded"` or `"Partial grading saved"` |
+| `score` | number | Current total score (MCQ auto-scored + graded subjective) |
+| `totalMarks` | number | Maximum possible marks for the quiz |
+| `allGraded` | boolean | `true` when all subjective responses have been graded |
 
 ---
 
@@ -610,7 +943,9 @@ Get statistics and all student results for a quiz.
     "totalAttempts": 25,
     "averageScore": 7.52,
     "highestScore": 10,
+    "lowestScore": 2,
     "passedCount": 20,
+    "failedCount": 5,
     "passRate": 80.00
   },
   "results": [
@@ -651,14 +986,96 @@ Get a student's performance history across all quizzes.
       "quizTitle": "Math Quiz 1",
       "score": 8,
       "totalMarks": 10,
+      "percentage": 80.00,
       "passed": true,
       "date": "2026-03-01T10:45:00.000Z"
+    }
+  ],
+  "summary": {
+    "totalAttempts": 5,
+    "averagePercentage": 76.40,
+    "quizzesPassed": 4,
+    "quizzesFailed": 1
+  }
+}
+```
+
+Attempts are sorted by date (most recent first). `passed` is `null` if the quiz has no `passMarks` set.
+
+### GET /v1/analytics/questions/:quizId
+
+Get per-question analysis for a quiz. Useful for identifying problematic questions.
+
+**Response** `200`:
+```json
+{
+  "quiz": {
+    "title": "Math Quiz 1",
+    "totalMarks": 10
+  },
+  "questions": [
+    {
+      "questionId": "665b...",
+      "text": "What is 2+2?",
+      "type": "MCQ",
+      "difficulty": "EASY",
+      "marks": 1,
+      "attemptedCount": 25,
+      "correctCount": 22,
+      "correctRate": 88.00,
+      "averageMarks": 0.88
+    },
+    {
+      "questionId": "665d...",
+      "text": "Explain polymorphism.",
+      "type": "SUBJECTIVE",
+      "difficulty": "HARD",
+      "marks": 5,
+      "attemptedCount": 25,
+      "correctCount": 0,
+      "correctRate": 0,
+      "averageMarks": 3.20
     }
   ]
 }
 ```
 
-Attempts are sorted by date (most recent first). `passed` is `null` if the quiz has no `passMarks` set.
+### GET /v1/analytics/difficulty/:quizId
+
+Get difficulty-wise breakdown for a quiz. Shows how students performed across different difficulty levels.
+
+**Response** `200`:
+```json
+{
+  "quiz": {
+    "title": "Math Quiz 1",
+    "totalMarks": 10
+  },
+  "difficulties": [
+    {
+      "difficulty": "EASY",
+      "questionCount": 3,
+      "totalMarks": 3,
+      "correctRate": 90.00,
+      "averageScore": 2.70
+    },
+    {
+      "difficulty": "MEDIUM",
+      "questionCount": 4,
+      "totalMarks": 4,
+      "correctRate": 65.00,
+      "averageScore": 2.60
+    },
+    {
+      "difficulty": "HARD",
+      "questionCount": 1,
+      "totalMarks": 3,
+      "correctRate": 40.00,
+      "averageScore": 1.20
+    }
+  ]
+}
+```
 
 ---
 
@@ -684,11 +1101,13 @@ No auth required. Returns health check with version info.
   name: string;
   role: "ADMIN" | "LECTURER" | "STUDENT";
   isActive: boolean;
+  isDeleted: boolean;    // true if soft-deleted
+  deletedAt?: string;    // ISO 8601, set when soft-deleted
   createdAt: string;     // ISO 8601
   updatedAt: string;
 }
 ```
-Note: `password` is never included in responses.
+Note: `password` is never included in responses. Soft-deleted users (`isDeleted: true`) are automatically excluded from all API query results.
 
 ### Class
 ```typescript
@@ -758,10 +1177,29 @@ Note: `password` is never included in responses.
   endTime?: string;
   responses: {
     questionId: string;
-    selectedOptionId?: string;
+    selectedOptionId?: string;   // For MCQ questions
+    textAnswer?: string;         // For SUBJECTIVE questions
+    awardedMarks?: number;       // Marks given by grader (SUBJECTIVE only)
+    isGraded: boolean;           // Whether this response has been graded
   }[];
   createdAt: string;
   updatedAt: string;
+}
+```
+
+> **Note on auto-expiration:** Attempts with status `STARTED` are automatically moved to `EXPIRED` when the quiz `endTime` passes or when the elapsed time exceeds the quiz `durationMinutes`. This check runs automatically when listing quizzes, starting attempts, and submitting attempts. Expired attempts cannot be submitted.
+
+### Tokens
+```typescript
+{
+  access: {
+    token: string;          // JWT access token
+    expires: string;        // ISO 8601 (default: 30 minutes from issue)
+  };
+  refresh: {
+    token: string;          // JWT refresh token
+    expires: string;        // ISO 8601 (default: 30 days from issue)
+  };
 }
 ```
 
@@ -787,6 +1225,32 @@ The items key varies: `users`, `quizzes`, etc. Default: page 1, limit 10.
 
 ---
 
+## Rate Limiting
+
+Rate limiting is applied in **production** mode only.
+
+| Scope | Limit | Window |
+| :--- | :--- | :--- |
+| General (all endpoints) | 100 requests | 15 minutes |
+| Auth endpoints (`/v1/auth/*`) | 20 requests | 15 minutes |
+
+When the limit is exceeded, the API returns:
+
+**Response** `429`:
+```json
+{
+  "message": "Too many requests, please try again later."
+}
+```
+
+---
+
+## Input Sanitization
+
+All request data (body, query parameters, and URL parameters) is automatically sanitized against XSS attacks. Request body size is limited to **1 MB**.
+
+---
+
 ## Error Responses
 
 All errors follow this format:
@@ -805,3 +1269,4 @@ In development mode, a `stack` field with the stack trace is also included.
 | `401` | Unauthorized | Missing/invalid/expired token |
 | `403` | Forbidden | User lacks required role |
 | `404` | Not Found | Resource doesn't exist |
+| `429` | Too Many Requests | Rate limit exceeded |

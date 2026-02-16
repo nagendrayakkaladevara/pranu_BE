@@ -4,21 +4,12 @@ import catchAsync from '../utils/catchAsync';
 import questionService from '../services/question.service';
 import { Difficulty } from '../models/question.model';
 
-/**
- * Create a new question
- * @param req Request object containing question details
- * @param res Response object to send created question
- */
 const createQuestion = catchAsync(async (req: Request, res: Response) => {
-  const result = await questionService.createQuestion(req.body);
+  const questionBody = { ...req.body, createdBy: req.user.id };
+  const result = await questionService.createQuestion(questionBody);
   res.status(httpStatus.CREATED).send(result);
 });
 
-/**
- * Get all questions with filters
- * @param req Request object containing query filters (subject, topic, difficulty, search)
- * @param res Response object to send list of questions
- */
 const getQuestions = catchAsync(async (req: Request, res: Response) => {
   const filter = {
     subject: req.query.subject ? String(req.query.subject) : undefined,
@@ -31,15 +22,10 @@ const getQuestions = catchAsync(async (req: Request, res: Response) => {
     page: Number(req.query.page) || 1,
     sortBy: req.query.sortBy,
   };
-  const result = await questionService.queryQuestions(filter, options);
+  const result = await questionService.queryQuestions(filter, options, req.user.id, req.user.role);
   res.send(result);
 });
 
-/**
- * Get question by ID
- * @param req Request object containing questionId params
- * @param res Response object to send question details
- */
 const getQuestion = catchAsync(async (req: Request, res: Response) => {
   const result = await questionService.getQuestionById(req.params.questionId);
   if (!result) {
@@ -49,23 +35,18 @@ const getQuestion = catchAsync(async (req: Request, res: Response) => {
   res.send(result);
 });
 
-/**
- * Update question by ID
- * @param req Request object containing questionId params and update body
- * @param res Response object to send updated question
- */
 const updateQuestion = catchAsync(async (req: Request, res: Response) => {
-  const result = await questionService.updateQuestionById(req.params.questionId, req.body);
+  const result = await questionService.updateQuestionById(
+    req.params.questionId,
+    req.body,
+    req.user.id,
+    req.user.role,
+  );
   res.send(result);
 });
 
-/**
- * Delete question by ID
- * @param req Request object containing questionId params
- * @param res Response object (No Content)
- */
 const deleteQuestion = catchAsync(async (req: Request, res: Response) => {
-  await questionService.deleteQuestionById(req.params.questionId);
+  await questionService.deleteQuestionById(req.params.questionId, req.user.id, req.user.role);
   res.status(httpStatus.NO_CONTENT).send();
 });
 

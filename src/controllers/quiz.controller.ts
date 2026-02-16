@@ -20,10 +20,14 @@ const createQuiz = catchAsync(async (req: Request, res: Response) => {
  * @param res Response object to send list of quizzes
  */
 const getQuizzes = catchAsync(async (req: Request, res: Response) => {
-  const filter = {
+  const filter: any = {
     title: req.query.title ? String(req.query.title) : undefined,
     status: req.query.status ? (req.query.status as QuizStatus) : undefined,
   };
+  // Lecturers see only their own quizzes; admins see all
+  if (req.user.role === 'LECTURER') {
+    filter.createdBy = req.user.id;
+  }
   const options = {
     limit: Number(req.query.limit) || 10,
     page: Number(req.query.page) || 1,
