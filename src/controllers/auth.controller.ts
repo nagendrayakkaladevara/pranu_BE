@@ -42,6 +42,12 @@ const updateMe = catchAsync(async (req: Request, res: Response) => {
   res.send(user);
 });
 
+const changePassword = catchAsync(async (req: Request, res: Response) => {
+  const { currentPassword, newPassword } = req.body;
+  await authService.changePassword(req.user.id, currentPassword, newPassword);
+  res.status(httpStatus.NO_CONTENT).send();
+});
+
 export default {
   register,
   login,
@@ -49,4 +55,5 @@ export default {
   refreshTokens,
   getMe,
   updateMe,
+  changePassword,
 };

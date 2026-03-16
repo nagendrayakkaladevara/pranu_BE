@@ -76,10 +76,7 @@ const deleteClass = catchAsync(async (req: Request, res: Response) => {
  * @param res Response object to send updated class
  */
 const assignStudents = catchAsync(async (req: Request, res: Response) => {
-  const result = await classService.assignStudentsToClass(
-    req.params.classId,
-    req.body.studentIds,
-  );
+  const result = await classService.assignStudentsToClass(req.params.classId, req.body.studentIds);
   res.send(result);
 });
 

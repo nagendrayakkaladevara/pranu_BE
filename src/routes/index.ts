@@ -2,6 +2,7 @@ import express from 'express';
 import authRoute from './v1/auth.route';
 import userRoute from './v1/user.route';
 import classRoute from './v1/class.route';
+import circularRoute from './v1/circular.route';
 import questionRoute from './v1/question.route';
 import quizRoute from './v1/quiz.route';
 import examRoute from './v1/exam.route';
@@ -21,6 +22,7 @@ router.get('/health', (req, res) => {
 router.use('/auth', authRoute);
 router.use('/users', userRoute);
 router.use('/classes', classRoute);
+router.use('/circulars', circularRoute);
 router.use('/questions', questionRoute);
 router.use('/quizzes', quizRoute);
 router.use('/exam', examRoute);

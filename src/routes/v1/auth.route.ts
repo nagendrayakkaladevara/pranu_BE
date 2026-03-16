@@ -32,6 +32,19 @@ router.post('/logout', validate(authValidation.logout), authController.logout);
 
 // Route: POST /v1/auth/refresh-tokens
 // Description: Generate new access + refresh tokens using a valid refresh token
-router.post('/refresh-tokens', validate(authValidation.refreshTokens), authController.refreshTokens);
+router.post(
+  '/refresh-tokens',
+  validate(authValidation.refreshTokens),
+  authController.refreshTokens,
+);
+
+// Route: POST /v1/auth/change-password
+// Description: Change password (LECTURER and STUDENT only; ADMIN excluded)
+router.post(
+  '/change-password',
+  auth('LECTURER', 'STUDENT'),
+  validate(authValidation.changePassword),
+  authController.changePassword,
+);
 
 export default router;

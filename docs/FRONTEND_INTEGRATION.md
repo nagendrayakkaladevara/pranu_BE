@@ -2,7 +2,8 @@
 
 This document walks through common integration workflows with the Backend API.
 
-For the full endpoint reference, see [FRONTEND_API_GUIDE.md](./FRONTEND_API_GUIDE.md).
+For the full endpoint reference, see [FRONTEND_API_GUIDE.md](./FRONTEND_API_GUIDE.md).  
+For fill-in-the-blank questions, see [FILL_IN_BLANK_FRONTEND_GUIDE.md](./FILL_IN_BLANK_FRONTEND_GUIDE.md).
 
 ## 1. Base Configuration
 
@@ -14,12 +15,13 @@ For the full endpoint reference, see [FRONTEND_API_GUIDE.md](./FRONTEND_API_GUID
 
 ### Rate Limiting (Production)
 
-| Scope | Limit | Window |
-| :--- | :--- | :--- |
-| Auth endpoints (`/v1/auth/*`) | 20 requests | 15 minutes |
+| Scope                          | Limit        | Window     |
+| :----------------------------- | :----------- | :--------- |
+| Auth endpoints (`/v1/auth/*`)  | 20 requests  | 15 minutes |
 | General API (all other routes) | 100 requests | 15 minutes |
 
 When a limit is exceeded, the server responds with `429 Too Many Requests`. Frontend should:
+
 - Show a "too many requests" message to the user.
 - Read the `Retry-After` header (if present) and wait before retrying.
 - Implement exponential backoff for automated retries.
@@ -31,6 +33,7 @@ When a limit is exceeded, the server responds with `429 Too Many Requests`. Fron
 The application uses JWT (JSON Web Tokens) for authentication.
 
 ### Token Handling
+
 - After a successful login/register, you will receive both an `access` token (short-lived) and a `refresh` token (long-lived) inside a `tokens` object.
   ```json
   {
@@ -58,18 +61,20 @@ The application uses JWT (JSON Web Tokens) for authentication.
 
 ### Auth Endpoints
 
-| Method | Endpoint | Body | Response |
-| :--- | :--- | :--- | :--- |
-| `POST` | `/v1/auth/register` | `{ name, email, password, role }` | `{ user, tokens }` |
-| `POST` | `/v1/auth/login` | `{ email, password }` | `{ user, tokens }` |
-| `POST` | `/v1/auth/logout` | `{ "refreshToken": "..." }` | `204 No Content` |
-| `POST` | `/v1/auth/refresh-tokens` | `{ "refreshToken": "..." }` | `{ user, tokens }` |
+| Method | Endpoint                  | Body                              | Response           |
+| :----- | :------------------------ | :-------------------------------- | :----------------- |
+| `POST` | `/v1/auth/register`       | `{ name, email, password, role }` | `{ user, tokens }` |
+| `POST` | `/v1/auth/login`          | `{ email, password }`             | `{ user, tokens }` |
+| `POST` | `/v1/auth/logout`         | `{ "refreshToken": "..." }`       | `204 No Content`   |
+| `POST` | `/v1/auth/refresh-tokens` | `{ "refreshToken": "..." }`       | `{ user, tokens }` |
 
 ### Logout
+
 - On logout, send the refresh token to `POST /v1/auth/logout` to invalidate it server-side.
 - Clear both tokens from client storage.
 
 ### Roles
+
 - `ADMIN`: Full access (user management, class management, analytics)
 - `LECTURER`: Manage questions, quizzes, grade subjective answers, view analytics
 - `STUDENT`: Take exams, view own results
@@ -78,12 +83,12 @@ The application uses JWT (JSON Web Tokens) for authentication.
 
 ## 3. Key Enums
 
-| Enum | Values | Notes |
-| :--- | :--- | :--- |
-| **Role** | `ADMIN`, `LECTURER`, `STUDENT` | |
-| **QuestionType** | `MCQ`, `SUBJECTIVE` | Both types are supported |
-| **Difficulty** | `EASY`, `MEDIUM`, `HARD` | |
-| **QuizStatus** | `DRAFT`, `PUBLISHED`, `ARCHIVED` | |
+| Enum              | Values                            | Notes                                     |
+| :---------------- | :-------------------------------- | :---------------------------------------- |
+| **Role**          | `ADMIN`, `LECTURER`, `STUDENT`    |                                           |
+| **QuestionType**  | `MCQ`, `SUBJECTIVE`, `FILL_IN_BLANK` | All three types supported; FILL_IN_BLANK is auto-graded |
+| **Difficulty**    | `EASY`, `MEDIUM`, `HARD`          |                                           |
+| **QuizStatus**    | `DRAFT`, `PUBLISHED`, `ARCHIVED`  |                                           |
 | **AttemptStatus** | `STARTED`, `SUBMITTED`, `EXPIRED` | `EXPIRED` set automatically by the server |
 
 ---
@@ -93,10 +98,12 @@ The application uses JWT (JSON Web Tokens) for authentication.
 When the access token expires, use the refresh token to obtain new tokens transparently.
 
 **Step 1: Detect Expiry**
+
 - Option A: Check the `access.expires` timestamp before each request and refresh proactively.
 - Option B: Intercept `401` responses and trigger a refresh.
 
 **Step 2: Request New Tokens**
+
 - `POST /v1/auth/refresh-tokens`
 - Body:
   ```json
@@ -114,13 +121,16 @@ When the access token expires, use the refresh token to obtain new tokens transp
   ```
 
 **Step 3: Update Stored Tokens**
+
 - Replace both the access and refresh tokens in storage with the new values.
 - Retry the original failed request with the new access token.
 
 **Step 4: Handle Refresh Failure**
+
 - If the refresh request returns `401` (refresh token expired or revoked), redirect the user to the login page and clear all stored tokens.
 
 **Recommended Pattern (Axios Example):**
+
 ```js
 api.interceptors.response.use(
   (response) => response,
@@ -142,7 +152,7 @@ api.interceptors.response.use(
       }
     }
     return Promise.reject(error);
-  }
+  },
 );
 ```
 
@@ -151,10 +161,12 @@ api.interceptors.response.use(
 ## 5. Workflow: Student Taking an Exam
 
 **Step 1: List Available Quizzes**
+
 - `GET /exam/quizzes`
 - Returns published quizzes assigned to the student's class and within the active time window.
 
 **Step 2: Start Attempt**
+
 - `POST /exam/quizzes/:quizId/start`
 - Response:
   ```json
@@ -181,11 +193,13 @@ api.interceptors.response.use(
     ]
   }
   ```
-- **MCQ questions** include options (without `isCorrect` -- answers are hidden from the student).
-- **SUBJECTIVE questions** return an empty `options` array. Render a text input/textarea for these.
+- **MCQ questions** include options (without `isCorrect` — answers are hidden from the student).
+- **SUBJECTIVE questions** return an empty `options` array. Render a textarea for these.
+- **FILL_IN_BLANK questions** return an empty `options` array. Render a single-line text input; student submits `textAnswer` (auto-graded, case-insensitive).
 - Store `attempt.id` for submission.
 
 **Step 3: Submit Answers**
+
 - `POST /exam/attempts/:attemptId/submit`
 - Body (supports both MCQ and SUBJECTIVE responses):
   ```json
@@ -196,8 +210,9 @@ api.interceptors.response.use(
     ]
   }
   ```
-  - Use `selectedOptionId` for MCQ questions.
-  - Use `textAnswer` for SUBJECTIVE questions.
+
+  - Use `selectedOptionId` (or `selectedOptionIds` for multiple-correct MCQ) for MCQ questions.
+  - Use `textAnswer` for SUBJECTIVE and FILL_IN_BLANK questions.
 - Response:
   ```json
   {
@@ -207,25 +222,31 @@ api.interceptors.response.use(
     "pendingGrading": true
   }
   ```
-  - `pendingGrading: true` indicates that subjective answers still need to be graded by a lecturer. The `score` reflects only auto-graded (MCQ) marks at this point.
+
+  - `pendingGrading: true` indicates that SUBJECTIVE answers still need to be graded by a lecturer. The `score` reflects auto-graded (MCQ + FILL_IN_BLANK) marks at this point.
   - `pendingGrading: false` means all questions were auto-graded and the score is final.
 
 **Auto-Expiration:**
+
 - Attempts automatically expire when the quiz time window ends or when the allowed duration is exceeded.
 - Expired attempts cannot be submitted. If a student tries to submit an expired attempt, they will receive a `400` error.
 - Frontend should implement a countdown timer based on the quiz duration and warn the user before time runs out.
 
 **Step 5: Review Past Attempts**
+
 - `GET /v1/exam/attempts` — List all own attempts with pagination and sorting (e.g., `?sortBy=submittedAt:desc`)
 - `GET /v1/exam/attempts/:attemptId` — View a single attempt's full details including responses and scores
 
 **Step 6: View Performance Stats**
+
 - `GET /v1/exam/my-stats` — Get overall performance summary (total attempts, average percentage, pass/fail counts) and detailed per-quiz history
 
 **Step 7: View Enrolled Classes**
+
 - `GET /v1/classes` — Students see only classes they are enrolled in
 
 **Step 8: View/Update Profile**
+
 - `GET /v1/auth/me` — Get own profile
 - `PATCH /v1/auth/me` — Update name, email, or password
 
@@ -234,9 +255,11 @@ api.interceptors.response.use(
 ## 6. Workflow: Lecturer Managing Quizzes
 
 **Step 1: Create Questions** -- `POST /questions`
-- Both MCQ and SUBJECTIVE question types are supported.
+
+- MCQ, SUBJECTIVE, and FILL_IN_BLANK question types are supported. Use `GET /questions?type=FILL_IN_BLANK` to filter when building a quiz.
 
 **Step 2: Create a Quiz (Draft)** -- `POST /quizzes`
+
 ```json
 {
   "title": "Mid-term Exam",
@@ -247,11 +270,13 @@ api.interceptors.response.use(
 ```
 
 **Step 3: Add Questions to Quiz** -- `POST /quizzes/:quizId/questions`
+
 ```json
 { "questionIds": ["665b...", "665c...", "665d..."] }
 ```
 
 **Step 4: Set Time Window** -- `PATCH /quizzes/:quizId`
+
 ```json
 {
   "startTime": "2026-03-01T09:00:00.000Z",
@@ -260,9 +285,11 @@ api.interceptors.response.use(
 ```
 
 **Step 5: Publish** -- `POST /quizzes/:quizId/publish`
+
 ```json
 { "classIds": ["665e...", "665f..."] }
 ```
+
 Requirements: quiz must have questions AND startTime/endTime set.
 
 ---
@@ -272,9 +299,11 @@ Requirements: quiz must have questions AND startTime/endTime set.
 After students submit quizzes containing subjective questions, lecturers must manually grade those answers.
 
 **Step 1: Identify Attempts with Pending Grading**
+
 - Use `GET /v1/exam/attempts?status=SUBMITTED` to list submitted attempts. Lecturers will only see attempts for quizzes they created; admins see all.
 
 **Step 2: Review and Grade**
+
 - `POST /v1/exam/attempts/:attemptId/grade`
 - Body:
   ```json
@@ -285,14 +314,17 @@ After students submit quizzes containing subjective questions, lecturers must ma
     ]
   }
   ```
+
   - `questionId`: The ID of the subjective question being graded.
   - `awardedMarks`: The marks awarded by the lecturer (must not exceed the question's max marks).
 
 **Step 3: Confirm Updated Score**
+
 - The response returns the updated attempt with the final score reflecting both auto-graded MCQ marks and manually graded subjective marks.
 - After all subjective answers are graded, `pendingGrading` becomes `false`.
 
 **UI Recommendations:**
+
 - Show the student's text answer alongside the question text and maximum marks.
 - Provide a numeric input constrained to `0` through the question's `marks` value.
 - Highlight ungraded answers so lecturers can easily find remaining work.
@@ -310,6 +342,7 @@ Uses `$addToSet` internally, so duplicate assignments are safely ignored.
 ### Soft Deletes
 
 User deletion (`DELETE /users/:userId`) is now a **soft delete**:
+
 - The user record is not removed from the database. Instead, `isDeleted` is set to `true` and `deletedAt` is set to the current timestamp.
 - Soft-deleted users are automatically filtered out from all list/query endpoints.
 - Soft-deleted users cannot log in.
@@ -323,19 +356,19 @@ User deletion (`DELETE /users/:userId`) is now a **soft delete**:
 
 Existing analytics endpoints now return additional data fields:
 
-| Field | Description |
-| :--- | :--- |
+| Field         | Description                          |
+| :------------ | :----------------------------------- |
 | `lowestScore` | The lowest score across all attempts |
-| `failedCount` | Number of students who failed |
-| `percentage` | Pass/fail percentage breakdown |
-| `summary` | Aggregated summary object |
+| `failedCount` | Number of students who failed        |
+| `percentage`  | Pass/fail percentage breakdown       |
+| `summary`     | Aggregated summary object            |
 
 ### New Endpoints
 
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| `GET` | `/v1/analytics/questions/:quizId` | Per-question analytics (correct rate, average marks, common wrong answers) |
-| `GET` | `/v1/analytics/difficulty/:quizId` | Difficulty distribution and analysis for the quiz |
+| Method | Endpoint                           | Description                                                                |
+| :----- | :--------------------------------- | :------------------------------------------------------------------------- |
+| `GET`  | `/v1/analytics/questions/:quizId`  | Per-question analytics (correct rate, average marks, common wrong answers) |
+| `GET`  | `/v1/analytics/difficulty/:quizId` | Difficulty distribution and analysis for the quiz                          |
 
 These endpoints are available to LECTURER and ADMIN roles.
 
@@ -344,6 +377,7 @@ These endpoints are available to LECTURER and ADMIN roles.
 ## 10. Error Handling
 
 All errors return:
+
 ```json
 {
   "code": 400,
@@ -351,6 +385,7 @@ All errors return:
   "stack": "..."
 }
 ```
+
 `stack` is only included in development mode.
 
 **Common Codes:**

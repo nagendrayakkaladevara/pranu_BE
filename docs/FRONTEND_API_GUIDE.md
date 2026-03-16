@@ -10,6 +10,7 @@ Complete API reference for the frontend team. All endpoints are prefixed with `/
 - [Profile (All Roles)](#profile-all-roles)
 - [Users (Admin)](#users-admin-only)
 - [Classes](#classes)
+- [Circulars (Lecturer)](#circulars-lecturer)
 - [Questions (Lecturer/Admin)](#questions-lectureadmin)
 - [Quizzes (Lecturer/Admin)](#quizzes-lectureadmin)
 - [Exam (Student)](#exam-student-only)
@@ -27,6 +28,7 @@ Complete API reference for the frontend team. All endpoints are prefixed with `/
 ## Authentication
 
 All protected endpoints require:
+
 ```
 Authorization: Bearer <access_token>
 ```
@@ -36,6 +38,7 @@ Authorization: Bearer <access_token>
 Create a new account. No auth required.
 
 **Body:**
+
 ```json
 {
   "email": "user@example.com",
@@ -45,14 +48,15 @@ Create a new account. No auth required.
 }
 ```
 
-| Field | Type | Required | Notes |
-| :--- | :--- | :--- | :--- |
-| `email` | string | Yes | Valid email format |
-| `password` | string | Yes | Min 8 characters |
-| `name` | string | Yes | |
-| `role` | string | No | `ADMIN`, `LECTURER`, `STUDENT` (default: `STUDENT`) |
+| Field      | Type   | Required | Notes                                               |
+| :--------- | :----- | :------- | :-------------------------------------------------- |
+| `email`    | string | Yes      | Valid email format                                  |
+| `password` | string | Yes      | Min 8 characters                                    |
+| `name`     | string | Yes      |                                                     |
+| `role`     | string | No       | `ADMIN`, `LECTURER`, `STUDENT` (default: `STUDENT`) |
 
 **Response** `201`:
+
 ```json
 {
   "user": {
@@ -82,6 +86,7 @@ Create a new account. No auth required.
 Authenticate an existing user. No auth required.
 
 **Body:**
+
 ```json
 {
   "email": "user@example.com",
@@ -96,15 +101,16 @@ Authenticate an existing user. No auth required.
 Invalidate a refresh token. No auth required.
 
 **Body:**
+
 ```json
 {
   "refreshToken": "eyJhbGciOiJIUzI1NiIs..."
 }
 ```
 
-| Field | Type | Required |
-| :--- | :--- | :--- |
-| `refreshToken` | string | Yes |
+| Field          | Type   | Required |
+| :------------- | :----- | :------- |
+| `refreshToken` | string | Yes      |
 
 **Response** `204`: No content.
 
@@ -113,17 +119,19 @@ Invalidate a refresh token. No auth required.
 Get new access and refresh tokens using a valid refresh token. No auth required.
 
 **Body:**
+
 ```json
 {
   "refreshToken": "eyJhbGciOiJIUzI1NiIs..."
 }
 ```
 
-| Field | Type | Required |
-| :--- | :--- | :--- |
-| `refreshToken` | string | Yes |
+| Field          | Type   | Required |
+| :------------- | :----- | :------- |
+| `refreshToken` | string | Yes      |
 
 **Response** `200`:
+
 ```json
 {
   "user": {
@@ -149,10 +157,12 @@ Get new access and refresh tokens using a valid refresh token. No auth required.
 ```
 
 **Token Expiration:**
+
 - Access tokens expire in **30 minutes** (default).
 - Refresh tokens expire in **30 days** (default).
 
 **Recommended frontend flow:**
+
 1. On login/register, store both tokens.
 2. Use the access token for API requests.
 3. When a request returns `401`, call `/v1/auth/refresh-tokens` with the stored refresh token.
@@ -182,6 +192,7 @@ Get the logged-in user's profile.
 Update the logged-in user's own profile. Users cannot change their own role.
 
 **Body** (at least one field):
+
 ```json
 {
   "name": "New Name",
@@ -190,11 +201,11 @@ Update the logged-in user's own profile. Users cannot change their own role.
 }
 ```
 
-| Field | Type | Required | Notes |
-| :--- | :--- | :--- | :--- |
-| `name` | string | No | |
-| `email` | string | No | Valid email format, must be unique |
-| `password` | string | No | Min 8 characters |
+| Field      | Type   | Required | Notes                              |
+| :--------- | :----- | :------- | :--------------------------------- |
+| `name`     | string | No       |                                    |
+| `email`    | string | No       | Valid email format, must be unique |
+| `password` | string | No       | Min 8 characters                   |
 
 **Response** `200`: Updated user object.
 
@@ -207,6 +218,7 @@ All endpoints require `Authorization: Bearer <adminToken>`.
 ### POST /v1/users
 
 **Body:**
+
 ```json
 {
   "email": "newuser@example.com",
@@ -216,12 +228,12 @@ All endpoints require `Authorization: Bearer <adminToken>`.
 }
 ```
 
-| Field | Type | Required |
-| :--- | :--- | :--- |
-| `email` | string | Yes |
-| `password` | string | Yes (min 8 chars) |
-| `name` | string | Yes |
-| `role` | string | Yes (`ADMIN`, `LECTURER`, `STUDENT`) |
+| Field      | Type   | Required                             |
+| :--------- | :----- | :----------------------------------- |
+| `email`    | string | Yes                                  |
+| `password` | string | Yes (min 8 chars)                    |
+| `name`     | string | Yes                                  |
+| `role`     | string | Yes (`ADMIN`, `LECTURER`, `STUDENT`) |
 
 **Response** `201`: User object.
 
@@ -229,15 +241,16 @@ All endpoints require `Authorization: Bearer <adminToken>`.
 
 **Query Parameters:**
 
-| Param | Type | Notes |
-| :--- | :--- | :--- |
-| `page` | number | Default: 1 |
-| `limit` | number | Default: 10 |
-| `role` | string | Filter: `ADMIN`, `LECTURER`, `STUDENT` |
-| `name` | string | Filter: partial match (case-insensitive) |
+| Param    | Type   | Notes                                                           |
+| :------- | :----- | :-------------------------------------------------------------- |
+| `page`   | number | Default: 1                                                      |
+| `limit`  | number | Default: 10                                                     |
+| `role`   | string | Filter: `ADMIN`, `LECTURER`, `STUDENT`                          |
+| `name`   | string | Filter: partial match (case-insensitive)                        |
 | `sortBy` | string | Format: `field:asc` or `field:desc` (default: `createdAt:desc`) |
 
 **Response** `200`:
+
 ```json
 {
   "users": [ { "id": "...", "email": "...", "name": "...", "role": "...", ... } ],
@@ -257,6 +270,7 @@ All endpoints require `Authorization: Bearer <adminToken>`.
 ### PATCH /v1/users/:userId
 
 **Body** (at least one field):
+
 ```json
 {
   "name": "Updated Name",
@@ -280,9 +294,11 @@ Soft-deletes the user. The user record is not physically removed from the databa
 ## Classes
 
 ### POST /v1/classes
+
 **Auth:** ADMIN only
 
 **Body:**
+
 ```json
 {
   "name": "CS 101",
@@ -292,36 +308,39 @@ Soft-deletes the user. The user record is not physically removed from the databa
 }
 ```
 
-| Field | Type | Required |
-| :--- | :--- | :--- |
-| `name` | string | Yes |
-| `department` | string | Yes |
-| `academicYear` | string | Yes |
-| `semester` | number | Yes (integer, min 1) |
+| Field          | Type   | Required             |
+| :------------- | :----- | :------------------- |
+| `name`         | string | Yes                  |
+| `department`   | string | Yes                  |
+| `academicYear` | string | Yes                  |
+| `semester`     | number | Yes (integer, min 1) |
 
 **Response** `201`: Class object.
 
 ### GET /v1/classes
+
 **Auth:** ADMIN, LECTURER, or STUDENT
 
 > **Role-based filtering:** Students only see classes they are enrolled in. Admins and Lecturers see all classes.
 
 **Query Parameters:**
 
-| Param | Type | Notes |
-| :--- | :--- | :--- |
-| `page` | number | Default: 1 |
-| `limit` | number | Default: 10 |
-| `name` | string | Filter: partial match |
-| `department` | string | Filter: partial match |
-| `sortBy` | string | Format: `field:asc` or `field:desc` |
+| Param        | Type   | Notes                               |
+| :----------- | :----- | :---------------------------------- |
+| `page`       | number | Default: 1                          |
+| `limit`      | number | Default: 10                         |
+| `name`       | string | Filter: partial match               |
+| `department` | string | Filter: partial match               |
+| `sortBy`     | string | Format: `field:asc` or `field:desc` |
 
 **Response** `200`: Paginated class list (same structure as users).
 
 ### GET /v1/classes/:classId
+
 **Auth:** ADMIN, LECTURER, or STUDENT
 
 **Response** `200`: Class object with populated `students` and `lecturers` arrays.
+
 ```json
 {
   "id": "665a...",
@@ -341,9 +360,11 @@ Soft-deletes the user. The user record is not physically removed from the databa
 ```
 
 ### PATCH /v1/classes/:classId
+
 **Auth:** ADMIN only
 
 **Body** (at least one field):
+
 ```json
 {
   "name": "CS 101 - Intro to CS",
@@ -356,16 +377,19 @@ Soft-deletes the user. The user record is not physically removed from the databa
 **Response** `200`: Updated class object.
 
 ### DELETE /v1/classes/:classId
+
 **Auth:** ADMIN only
 
 **Response** `204`: No content.
 
 ### POST /v1/classes/:classId/students
+
 **Auth:** ADMIN only
 
 Assign students to a class. Duplicates are safely ignored.
 
 **Body:**
+
 ```json
 {
   "studentIds": ["665a...", "665b..."]
@@ -375,11 +399,13 @@ Assign students to a class. Duplicates are safely ignored.
 **Response** `200`: Updated class object.
 
 ### POST /v1/classes/:classId/lecturers
+
 **Auth:** ADMIN only
 
 Assign lecturers to a class. Duplicates are safely ignored.
 
 **Body:**
+
 ```json
 {
   "lecturerIds": ["665c..."]
@@ -390,6 +416,125 @@ Assign lecturers to a class. Duplicates are safely ignored.
 
 ---
 
+## Circulars (Lecturer)
+
+Lecturers can publish circulars, notices, and announcements. Students see only circulars targeted to their classes, department, or all. Admins and lecturers can view all circulars.
+
+**Types:** `CIRCULAR`, `NOTICE`, `ANNOUNCEMENT`  
+**Target types:** `CLASS` (specific class), `DEPARTMENT` (all students in department), `ALL` (everyone)  
+**Priority:** `LOW`, `NORMAL`, `HIGH`, `URGENT`
+
+### POST /v1/circulars
+
+**Auth:** LECTURER only
+
+**Body:**
+
+```json
+{
+  "type": "ANNOUNCEMENT",
+  "title": "Exam Schedule Update",
+  "content": "The mid-term exam has been rescheduled to next Friday.",
+  "targetType": "CLASS",
+  "targetClassId": "665a1b2c3d4e5f6a7b8c9d0e",
+  "priority": "HIGH",
+  "isPinned": true
+}
+```
+
+| Field             | Type    | Required | Notes                                                                 |
+| :---------------- | :------ | :------- | :-------------------------------------------------------------------- |
+| `type`            | string  | Yes      | `CIRCULAR`, `NOTICE`, or `ANNOUNCEMENT`                               |
+| `title`           | string  | Yes      | Max 200 chars                                                         |
+| `content`         | string  | Yes      |                                                                       |
+| `targetType`      | string  | Yes      | `CLASS`, `DEPARTMENT`, or `ALL`                                       |
+| `targetClassId`   | string  | Cond.    | Required when `targetType` is `CLASS`                                 |
+| `targetDepartment`| string  | Cond.    | Required when `targetType` is `DEPARTMENT`                            |
+| `priority`        | string  | No       | `LOW`, `NORMAL` (default), `HIGH`, `URGENT`                           |
+| `isPinned`        | boolean | No       | Default: false. Pinned items appear first.                             |
+
+**Response** `201`: Created circular object with `publishedBy` populated.
+
+### GET /v1/circulars
+
+**Auth:** ADMIN, LECTURER, or STUDENT
+
+> **Role-based visibility:** Students see only circulars targeted to their classes, department, or all. Lecturers and admins see all circulars.
+
+**Query Parameters:**
+
+| Param             | Type    | Notes                                                              |
+| :---------------- | :------ | :----------------------------------------------------------------- |
+| `page`            | number  | Default: 1                                                         |
+| `limit`           | number  | Default: 10                                                         |
+| `type`            | string  | Filter: `CIRCULAR`, `NOTICE`, `ANNOUNCEMENT`                        |
+| `targetType`      | string  | Filter: `CLASS`, `DEPARTMENT`, `ALL`                                |
+| `targetClassId`   | string  | Filter by class                                                    |
+| `targetDepartment`| string  | Filter by department (partial match)                                |
+| `priority`        | string  | Filter: `LOW`, `NORMAL`, `HIGH`, `URGENT`                           |
+| `isPinned`        | boolean | Filter by pinned status                                            |
+| `myOnly`          | boolean | Lecturers only: show only circulars they published                 |
+| `sortBy`          | string  | Format: `field:asc` or `field:desc` (default: pinned first, then by date) |
+
+**Response** `200`:
+
+```json
+{
+  "circulars": [
+    {
+      "id": "665a...",
+      "type": "ANNOUNCEMENT",
+      "title": "Exam Schedule Update",
+      "content": "The mid-term exam has been rescheduled...",
+      "publishedBy": { "id": "...", "name": "Dr. Smith", "email": "smith@example.com" },
+      "targetType": "CLASS",
+      "targetClassId": { "id": "...", "name": "CS 101", "department": "Computer Science" },
+      "priority": "HIGH",
+      "isPinned": true,
+      "createdAt": "2026-03-16T10:00:00.000Z",
+      "updatedAt": "2026-03-16T10:00:00.000Z"
+    }
+  ],
+  "page": 1,
+  "limit": 10,
+  "totalPages": 1,
+  "totalResults": 1
+}
+```
+
+### GET /v1/circulars/:circularId
+
+**Auth:** ADMIN, LECTURER, or STUDENT
+
+Students receive `403` if the circular is not targeted to them.
+
+**Response** `200`: Circular object with populated `publishedBy` and `targetClassId`.
+
+### PATCH /v1/circulars/:circularId
+
+**Auth:** LECTURER only (must be the publisher)
+
+**Body** (at least one field):
+
+```json
+{
+  "title": "Updated Title",
+  "content": "Updated content",
+  "priority": "URGENT",
+  "isPinned": true
+}
+```
+
+**Response** `200`: Updated circular object.
+
+### DELETE /v1/circulars/:circularId
+
+**Auth:** LECTURER only (must be the publisher)
+
+**Response** `204`: No content.
+
+---
+
 ## Questions (Lecturer/Admin)
 
 All endpoints require auth with `LECTURER` or `ADMIN` role.
@@ -397,6 +542,7 @@ All endpoints require auth with `LECTURER` or `ADMIN` role.
 ### POST /v1/questions
 
 **Body:**
+
 ```json
 {
   "text": "What is 2 + 2?",
@@ -414,31 +560,35 @@ All endpoints require auth with `LECTURER` or `ADMIN` role.
 }
 ```
 
-| Field | Type | Required | Notes |
-| :--- | :--- | :--- | :--- |
-| `text` | string | Yes | |
-| `type` | string | No | `MCQ` (default) or `SUBJECTIVE` |
-| `difficulty` | string | No | `EASY`, `MEDIUM` (default), `HARD` |
-| `marks` | number | No | Integer, min 1 (default: 1) |
-| `subject` | string | Yes | |
-| `topic` | string | No | |
-| `options` | array | Yes | Min 2 items. Each: `{ text: string, isCorrect: boolean }` |
+| Field        | Type   | Required | Notes                                                     |
+| :----------- | :----- | :------- | :-------------------------------------------------------- |
+| `text`       | string | Yes      |                                                           |
+| `type`           | string   | No       | `MCQ` (default), `SUBJECTIVE`, or `FILL_IN_BLANK`         |
+| `difficulty`     | string   | No       | `EASY`, `MEDIUM` (default), `HARD`                       |
+| `marks`          | number   | No       | Integer, min 1 (default: 1)                              |
+| `subject`        | string   | Yes      |                                                           |
+| `topic`          | string   | No       |                                                           |
+| `options`        | array    | Yes*     | *Required for MCQ. Min 2 items. Not used for FILL_IN_BLANK. |
+| `correctAnswers` | string[] | Yes*     | *Required for FILL_IN_BLANK. Min 1 non-empty. Case-insensitive matching. |
 
 **Response** `201`: Question object with generated option IDs.
+
+> **Fill-in-the-Blank:** For `type: "FILL_IN_BLANK"`, use `correctAnswers` (array of strings) instead of `options`. Answers are checked case-insensitively. See [FILL_IN_BLANK_FRONTEND_GUIDE.md](./FILL_IN_BLANK_FRONTEND_GUIDE.md) for full integration details.
 
 ### GET /v1/questions
 
 **Query Parameters:**
 
-| Param | Type | Notes |
-| :--- | :--- | :--- |
-| `page` | number | Default: 1 |
-| `limit` | number | Default: 10 |
-| `subject` | string | Filter by subject |
-| `topic` | string | Filter by topic |
-| `difficulty` | string | `EASY`, `MEDIUM`, `HARD` |
-| `search` | string | Search in question text |
-| `sortBy` | string | Format: `field:asc` or `field:desc` |
+| Param        | Type   | Notes                               |
+| :----------- | :----- | :---------------------------------- |
+| `page`       | number | Default: 1                          |
+| `limit`      | number | Default: 10                         |
+| `subject`    | string | Filter by subject                   |
+| `topic`      | string | Filter by topic                     |
+| `difficulty`  | string | `EASY`, `MEDIUM`, `HARD`            |
+| `type`        | string | `MCQ`, `SUBJECTIVE`, `FILL_IN_BLANK`|
+| `search`      | string | Search in question text             |
+| `sortBy`     | string | Format: `field:asc` or `field:desc` |
 
 **Response** `200`: Paginated question list.
 
@@ -449,6 +599,7 @@ All endpoints require auth with `LECTURER` or `ADMIN` role.
 ### PATCH /v1/questions/:questionId
 
 **Body** (at least one field):
+
 ```json
 {
   "text": "Updated question?",
@@ -480,6 +631,7 @@ All endpoints require auth with `LECTURER` or `ADMIN` role.
 Creates a quiz in `DRAFT` status.
 
 **Body:**
+
 ```json
 {
   "title": "Math Quiz 1",
@@ -493,16 +645,16 @@ Creates a quiz in `DRAFT` status.
 }
 ```
 
-| Field | Type | Required | Notes |
-| :--- | :--- | :--- | :--- |
-| `title` | string | Yes | |
-| `description` | string | No | |
-| `totalMarks` | number | Yes | Integer, min 1 |
-| `durationMinutes` | number | No | Integer, min 1 (default: 60) |
-| `passMarks` | number | No | Integer |
-| `shuffleQuestions` | boolean | No | Default: false |
-| `startTime` | string | No | ISO 8601 datetime |
-| `endTime` | string | No | ISO 8601 datetime |
+| Field              | Type    | Required | Notes                        |
+| :----------------- | :------ | :------- | :--------------------------- |
+| `title`            | string  | Yes      |                              |
+| `description`      | string  | No       |                              |
+| `totalMarks`       | number  | Yes      | Integer, min 1               |
+| `durationMinutes`  | number  | No       | Integer, min 1 (default: 60) |
+| `passMarks`        | number  | No       | Integer                      |
+| `shuffleQuestions` | boolean | No       | Default: false               |
+| `startTime`        | string  | No       | ISO 8601 datetime            |
+| `endTime`          | string  | No       | ISO 8601 datetime            |
 
 **Response** `201`: Quiz object.
 
@@ -512,15 +664,16 @@ Creates a quiz in `DRAFT` status.
 
 **Query Parameters:**
 
-| Param | Type | Notes |
-| :--- | :--- | :--- |
-| `page` | number | Default: 1 |
-| `limit` | number | Default: 10 |
-| `title` | string | Filter: partial match |
-| `status` | string | `DRAFT`, `PUBLISHED`, `ARCHIVED` |
+| Param    | Type   | Notes                               |
+| :------- | :----- | :---------------------------------- |
+| `page`   | number | Default: 1                          |
+| `limit`  | number | Default: 10                         |
+| `title`  | string | Filter: partial match               |
+| `status` | string | `DRAFT`, `PUBLISHED`, `ARCHIVED`    |
 | `sortBy` | string | Format: `field:asc` or `field:desc` |
 
 **Response** `200`:
+
 ```json
 {
   "quizzes": [
@@ -551,6 +704,7 @@ Note: The list response includes `_count` with question and class counts.
 Returns quiz with populated questions and assigned classes.
 
 **Response** `200`:
+
 ```json
 {
   "id": "665a...",
@@ -586,6 +740,7 @@ Note: Questions and classes are wrapped as `{ question: {...} }` and `{ class: {
 ### PATCH /v1/quizzes/:quizId
 
 **Body** (at least one field):
+
 ```json
 {
   "title": "Updated Title",
@@ -607,6 +762,7 @@ Validation: `startTime` must be before `endTime` when both are provided.
 Add questions to a quiz. Duplicates are safely ignored.
 
 **Body:**
+
 ```json
 {
   "questionIds": ["665b...", "665c..."]
@@ -620,10 +776,12 @@ Add questions to a quiz. Duplicates are safely ignored.
 Publish a quiz to specific classes. Changes status to `PUBLISHED`.
 
 **Prerequisites:**
+
 - Quiz must have at least one question
 - Quiz must have `startTime` and `endTime` set
 
 **Body:**
+
 ```json
 {
   "classIds": ["665d...", "665e..."]
@@ -650,17 +808,19 @@ List quizzes available for the logged-in student. Returns published quizzes assi
 
 Start a quiz attempt. Returns sanitized questions (without correct answers).
 
-For `SUBJECTIVE` type questions, the `options` array will be empty.
+For `SUBJECTIVE` and `FILL_IN_BLANK` type questions, the `options` array will be empty. FILL_IN_BLANK uses `textAnswer` (same as SUBJECTIVE) and is auto-graded with case-insensitive matching.
 
 > **Note:** Stale attempts for the quiz are automatically expired before starting a new attempt.
 
 **Errors:**
+
 - `400` "Quiz is not active" -- quiz not published
 - `400` "Quiz has not started yet" -- before startTime
 - `400` "Quiz has expired" -- after endTime
 - `400` "You have already submitted this quiz" -- already submitted
 
 **Response** `200`:
+
 ```json
 {
   "attempt": {
@@ -687,6 +847,13 @@ For `SUBJECTIVE` type questions, the `options` array will be empty.
     },
     {
       "id": "665d...",
+      "text": "The capital of France is ___.",
+      "type": "FILL_IN_BLANK",
+      "marks": 1,
+      "options": []
+    },
+    {
+      "id": "665e...",
       "text": "Explain the concept of polymorphism.",
       "type": "SUBJECTIVE",
       "marks": 5,
@@ -698,29 +865,34 @@ For `SUBJECTIVE` type questions, the `options` array will be empty.
 
 ### POST /v1/exam/attempts/:attemptId/submit
 
-Submit answers for a quiz attempt. Supports both MCQ and SUBJECTIVE question types.
+Submit answers for a quiz attempt. Supports MCQ, SUBJECTIVE, and FILL_IN_BLANK question types.
 
 **Body:**
+
 ```json
 {
   "responses": [
     { "questionId": "665b...", "selectedOptionId": "665c02..." },
-    { "questionId": "665d...", "textAnswer": "Polymorphism is the ability of..." }
+    { "questionId": "665d...", "textAnswer": "Paris" },
+    { "questionId": "665e...", "textAnswer": "Polymorphism is the ability of..." }
   ]
 }
 ```
 
-| Field | Type | Required | Notes |
-| :--- | :--- | :--- | :--- |
-| `responses` | array | Yes | |
-| `responses[].questionId` | string | Yes | |
-| `responses[].selectedOptionId` | string | Conditional | Required for MCQ questions |
-| `responses[].textAnswer` | string | Conditional | Required for SUBJECTIVE questions |
+| Field                          | Type   | Required    | Notes                             |
+| :----------------------------- | :----- | :---------- | :-------------------------------- |
+| `responses`                    | array  | Yes         |                                   |
+| `responses[].questionId`       | string | Yes         |                                   |
+| `responses[].selectedOptionId` | string | Conditional | Required for MCQ (single correct)  |
+| `responses[].selectedOptionIds`| array  | Conditional | Required for MCQ (multiple correct)|
+| `responses[].textAnswer`      | string | Conditional | Required for SUBJECTIVE and FILL_IN_BLANK |
 
 **Errors:**
+
 - `400` "Attempt has expired" -- attempt auto-expired due to time limit
 
 **Response** `200`:
+
 ```json
 {
   "message": "Quiz submitted successfully",
@@ -730,7 +902,7 @@ Submit answers for a quiz attempt. Supports both MCQ and SUBJECTIVE question typ
 }
 ```
 
-The `pendingGrading` flag is `true` when the quiz contains SUBJECTIVE questions that still need to be graded by a lecturer or admin. The `score` reflects only the MCQ questions scored so far; it will update once subjective questions are graded.
+The `pendingGrading` flag is `true` when the quiz contains SUBJECTIVE questions that still need to be graded by a lecturer or admin. The `score` reflects MCQ and FILL_IN_BLANK (auto-graded) marks; it will update once subjective questions are graded.
 
 ---
 
@@ -743,6 +915,7 @@ The `pendingGrading` flag is `true` when the quiz contains SUBJECTIVE questions 
 Get the logged-in student's own performance summary and attempt history across all quizzes.
 
 **Response** `200`:
+
 ```json
 {
   "student": {
@@ -752,7 +925,7 @@ Get the logged-in student's own performance summary and attempt history across a
   },
   "summary": {
     "totalAttempts": 5,
-    "averagePercentage": 76.40,
+    "averagePercentage": 76.4,
     "quizzesPassed": 4,
     "quizzesFailed": 1
   },
@@ -762,7 +935,7 @@ Get the logged-in student's own performance summary and attempt history across a
       "quizTitle": "Math Quiz 1",
       "score": 8,
       "totalMarks": 10,
-      "percentage": 80.00,
+      "percentage": 80.0,
       "passed": true,
       "date": "2026-03-01T10:45:00.000Z"
     }
@@ -781,22 +954,24 @@ Attempts are sorted by date (most recent first). `passed` is `null` if the quiz 
 **Auth:** STUDENT, LECTURER, or ADMIN
 
 **Role-based scoping:**
+
 - **STUDENT**: sees only their own attempts
 - **LECTURER**: sees attempts for quizzes they created
 - **ADMIN**: sees all attempts
 
 **Query Parameters:**
 
-| Param | Type | Notes |
-| :--- | :--- | :--- |
-| `page` | number | Default: 1 |
-| `limit` | number | Default: 10 |
-| `sortBy` | string | Format: `field:asc` or `field:desc` (e.g., `submittedAt:desc`) |
-| `quizId` | string | Filter by quiz ID |
+| Param       | Type   | Notes                                                           |
+| :---------- | :----- | :-------------------------------------------------------------- |
+| `page`      | number | Default: 1                                                      |
+| `limit`     | number | Default: 10                                                     |
+| `sortBy`    | string | Format: `field:asc` or `field:desc` (e.g., `submittedAt:desc`)  |
+| `quizId`    | string | Filter by quiz ID                                               |
 | `studentId` | string | Filter by student ID (LECTURER/ADMIN only, ignored for STUDENT) |
-| `status` | string | `STARTED`, `SUBMITTED`, `EXPIRED` |
+| `status`    | string | `STARTED`, `SUBMITTED`, `EXPIRED`                               |
 
 **Response** `200`:
+
 ```json
 {
   "attempts": [
@@ -837,11 +1012,13 @@ Attempts are sorted by date (most recent first). `passed` is `null` if the quiz 
 Get a single attempt by ID with populated quiz and student details.
 
 **Role-based access:**
+
 - **STUDENT**: can only view their own attempts
 - **LECTURER**: can only view attempts for quizzes they created
 - **ADMIN**: can view any attempt
 
 **Response** `200`:
+
 ```json
 {
   "id": "665f...",
@@ -875,6 +1052,7 @@ Get a single attempt by ID with populated quiz and student details.
 ```
 
 **Errors:**
+
 - `403` "You can only view your own attempts" (STUDENT accessing another student's attempt)
 - `403` "You can only view attempts for your own quizzes" (LECTURER accessing another lecturer's quiz attempt)
 
@@ -889,6 +1067,7 @@ All endpoints require auth with `LECTURER` or `ADMIN` role.
 Grade subjective questions for a submitted quiz attempt.
 
 **Body:**
+
 ```json
 {
   "grades": [
@@ -898,13 +1077,14 @@ Grade subjective questions for a submitted quiz attempt.
 }
 ```
 
-| Field | Type | Required | Notes |
-| :--- | :--- | :--- | :--- |
-| `grades` | array | Yes | |
-| `grades[].questionId` | string | Yes | ID of the subjective question |
-| `grades[].awardedMarks` | number | Yes | Marks awarded for the response |
+| Field                   | Type   | Required | Notes                          |
+| :---------------------- | :----- | :------- | :----------------------------- |
+| `grades`                | array  | Yes      |                                |
+| `grades[].questionId`   | string | Yes      | ID of the subjective question  |
+| `grades[].awardedMarks` | number | Yes      | Marks awarded for the response |
 
 **Response** `200`:
+
 ```json
 {
   "message": "All responses graded",
@@ -914,12 +1094,12 @@ Grade subjective questions for a submitted quiz attempt.
 }
 ```
 
-| Field | Type | Notes |
-| :--- | :--- | :--- |
-| `message` | string | `"All responses graded"` or `"Partial grading saved"` |
-| `score` | number | Current total score (MCQ auto-scored + graded subjective) |
-| `totalMarks` | number | Maximum possible marks for the quiz |
-| `allGraded` | boolean | `true` when all subjective responses have been graded |
+| Field        | Type    | Notes                                                     |
+| :----------- | :------ | :-------------------------------------------------------- |
+| `message`    | string  | `"All responses graded"` or `"Partial grading saved"`     |
+| `score`      | number  | Current total score (MCQ auto-scored + graded subjective) |
+| `totalMarks` | number  | Maximum possible marks for the quiz                       |
+| `allGraded`  | boolean | `true` when all subjective responses have been graded     |
 
 ---
 
@@ -932,6 +1112,7 @@ All endpoints require auth with `LECTURER` or `ADMIN` role.
 Get statistics and all student results for a quiz.
 
 **Response** `200`:
+
 ```json
 {
   "quiz": {
@@ -973,6 +1154,7 @@ Results are sorted by score (highest first).
 Get a student's performance history across all quizzes.
 
 **Response** `200`:
+
 ```json
 {
   "student": {
@@ -986,14 +1168,14 @@ Get a student's performance history across all quizzes.
       "quizTitle": "Math Quiz 1",
       "score": 8,
       "totalMarks": 10,
-      "percentage": 80.00,
+      "percentage": 80.0,
       "passed": true,
       "date": "2026-03-01T10:45:00.000Z"
     }
   ],
   "summary": {
     "totalAttempts": 5,
-    "averagePercentage": 76.40,
+    "averagePercentage": 76.4,
     "quizzesPassed": 4,
     "quizzesFailed": 1
   }
@@ -1007,6 +1189,7 @@ Attempts are sorted by date (most recent first). `passed` is `null` if the quiz 
 Get per-question analysis for a quiz. Useful for identifying problematic questions.
 
 **Response** `200`:
+
 ```json
 {
   "quiz": {
@@ -1022,7 +1205,7 @@ Get per-question analysis for a quiz. Useful for identifying problematic questio
       "marks": 1,
       "attemptedCount": 25,
       "correctCount": 22,
-      "correctRate": 88.00,
+      "correctRate": 88.0,
       "averageMarks": 0.88
     },
     {
@@ -1034,7 +1217,7 @@ Get per-question analysis for a quiz. Useful for identifying problematic questio
       "attemptedCount": 25,
       "correctCount": 0,
       "correctRate": 0,
-      "averageMarks": 3.20
+      "averageMarks": 3.2
     }
   ]
 }
@@ -1045,6 +1228,7 @@ Get per-question analysis for a quiz. Useful for identifying problematic questio
 Get difficulty-wise breakdown for a quiz. Shows how students performed across different difficulty levels.
 
 **Response** `200`:
+
 ```json
 {
   "quiz": {
@@ -1056,22 +1240,22 @@ Get difficulty-wise breakdown for a quiz. Shows how students performed across di
       "difficulty": "EASY",
       "questionCount": 3,
       "totalMarks": 3,
-      "correctRate": 90.00,
-      "averageScore": 2.70
+      "correctRate": 90.0,
+      "averageScore": 2.7
     },
     {
       "difficulty": "MEDIUM",
       "questionCount": 4,
       "totalMarks": 4,
-      "correctRate": 65.00,
-      "averageScore": 2.60
+      "correctRate": 65.0,
+      "averageScore": 2.6
     },
     {
       "difficulty": "HARD",
       "questionCount": 1,
       "totalMarks": 3,
-      "correctRate": 40.00,
-      "averageScore": 1.20
+      "correctRate": 40.0,
+      "averageScore": 1.2
     }
   ]
 }
@@ -1094,6 +1278,7 @@ No auth required. Returns health check with version info.
 ## Data Models
 
 ### User
+
 ```typescript
 {
   id: string;            // MongoDB ObjectId
@@ -1107,9 +1292,11 @@ No auth required. Returns health check with version info.
   updatedAt: string;
 }
 ```
+
 Note: `password` is never included in responses. Soft-deleted users (`isDeleted: true`) are automatically excluded from all API query results.
 
 ### Class
+
 ```typescript
 {
   id: string;
@@ -1125,26 +1312,29 @@ Note: `password` is never included in responses. Soft-deleted users (`isDeleted:
 ```
 
 ### Question
+
 ```typescript
 {
   id: string;
   text: string;
-  type: "MCQ" | "SUBJECTIVE";
+  type: "MCQ" | "SUBJECTIVE" | "FILL_IN_BLANK";
   difficulty: "EASY" | "MEDIUM" | "HARD";
   marks: number;
   subject: string;
   topic?: string;
-  options: {
+  options?: {
     _id: string;       // Option ID (use this as selectedOptionId)
     text: string;
     isCorrect: boolean; // Hidden from students during exams
   }[];
+  correctAnswers?: string[];  // FILL_IN_BLANK only; never sent to students
   createdAt: string;
   updatedAt: string;
 }
 ```
 
 ### Quiz
+
 ```typescript
 {
   id: string;
@@ -1166,6 +1356,7 @@ Note: `password` is never included in responses. Soft-deleted users (`isDeleted:
 ```
 
 ### QuizAttempt
+
 ```typescript
 {
   id: string;
@@ -1177,10 +1368,11 @@ Note: `password` is never included in responses. Soft-deleted users (`isDeleted:
   endTime?: string;
   responses: {
     questionId: string;
-    selectedOptionId?: string;   // For MCQ questions
-    textAnswer?: string;         // For SUBJECTIVE questions
-    awardedMarks?: number;       // Marks given by grader (SUBJECTIVE only)
-    isGraded: boolean;           // Whether this response has been graded
+    selectedOptionId?: string;   // For MCQ (single correct)
+    selectedOptionIds?: string[];// For MCQ (multiple correct)
+    textAnswer?: string;         // For SUBJECTIVE and FILL_IN_BLANK
+    awardedMarks?: number;      // Marks given (auto for MCQ/FILL_IN_BLANK, manual for SUBJECTIVE)
+    isGraded: boolean;          // Whether this response has been graded
   }[];
   createdAt: string;
   updatedAt: string;
@@ -1190,16 +1382,17 @@ Note: `password` is never included in responses. Soft-deleted users (`isDeleted:
 > **Note on auto-expiration:** Attempts with status `STARTED` are automatically moved to `EXPIRED` when the quiz `endTime` passes or when the elapsed time exceeds the quiz `durationMinutes`. This check runs automatically when listing quizzes, starting attempts, and submitting attempts. Expired attempts cannot be submitted.
 
 ### Tokens
+
 ```typescript
 {
   access: {
-    token: string;          // JWT access token
-    expires: string;        // ISO 8601 (default: 30 minutes from issue)
-  };
+    token: string; // JWT access token
+    expires: string; // ISO 8601 (default: 30 minutes from issue)
+  }
   refresh: {
-    token: string;          // JWT refresh token
-    expires: string;        // ISO 8601 (default: 30 days from issue)
-  };
+    token: string; // JWT refresh token
+    expires: string; // ISO 8601 (default: 30 days from issue)
+  }
 }
 ```
 
@@ -1229,14 +1422,15 @@ The items key varies: `users`, `quizzes`, etc. Default: page 1, limit 10.
 
 Rate limiting is applied in **production** mode only.
 
-| Scope | Limit | Window |
-| :--- | :--- | :--- |
-| General (all endpoints) | 100 requests | 15 minutes |
-| Auth endpoints (`/v1/auth/*`) | 20 requests | 15 minutes |
+| Scope                         | Limit        | Window     |
+| :---------------------------- | :----------- | :--------- |
+| General (all endpoints)       | 100 requests | 15 minutes |
+| Auth endpoints (`/v1/auth/*`) | 20 requests  | 15 minutes |
 
 When the limit is exceeded, the API returns:
 
 **Response** `429`:
+
 ```json
 {
   "message": "Too many requests, please try again later."
@@ -1254,6 +1448,7 @@ All request data (body, query parameters, and URL parameters) is automatically s
 ## Error Responses
 
 All errors follow this format:
+
 ```json
 {
   "code": 400,
@@ -1263,10 +1458,10 @@ All errors follow this format:
 
 In development mode, a `stack` field with the stack trace is also included.
 
-| Status | Meaning | Typical Cause |
-| :--- | :--- | :--- |
-| `400` | Bad Request | Validation error, business rule violation |
-| `401` | Unauthorized | Missing/invalid/expired token |
-| `403` | Forbidden | User lacks required role |
-| `404` | Not Found | Resource doesn't exist |
-| `429` | Too Many Requests | Rate limit exceeded |
+| Status | Meaning           | Typical Cause                             |
+| :----- | :---------------- | :---------------------------------------- |
+| `400`  | Bad Request       | Validation error, business rule violation |
+| `401`  | Unauthorized      | Missing/invalid/expired token             |
+| `403`  | Forbidden         | User lacks required role                  |
+| `404`  | Not Found         | Resource doesn't exist                    |
+| `429`  | Too Many Requests | Rate limit exceeded                       |

@@ -2,7 +2,7 @@ import httpStatus from 'http-status';
 import { Request, Response } from 'express';
 import catchAsync from '../utils/catchAsync';
 import questionService from '../services/question.service';
-import { Difficulty } from '../models/question.model';
+import { Difficulty, QuestionType } from '../models/question.model';
 
 const createQuestion = catchAsync(async (req: Request, res: Response) => {
   const questionBody = { ...req.body, createdBy: req.user.id };
@@ -15,6 +15,7 @@ const getQuestions = catchAsync(async (req: Request, res: Response) => {
     subject: req.query.subject ? String(req.query.subject) : undefined,
     topic: req.query.topic ? String(req.query.topic) : undefined,
     difficulty: req.query.difficulty ? (req.query.difficulty as Difficulty) : undefined,
+    type: req.query.type ? (req.query.type as QuestionType) : undefined,
     search: req.query.search ? String(req.query.search) : undefined,
   };
   const options = {

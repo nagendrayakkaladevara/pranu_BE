@@ -25,9 +25,8 @@ export const errorConverter = (err: any, req: Request, res: Response, next: Next
   let error = err;
   if (!(error instanceof ApiError)) {
     const statusCode =
-      error.statusCode || (error instanceof Error
-        ? httpStatus.BAD_REQUEST
-        : httpStatus.INTERNAL_SERVER_ERROR);
+      error.statusCode ||
+      (error instanceof Error ? httpStatus.BAD_REQUEST : httpStatus.INTERNAL_SERVER_ERROR);
     const message = error.message || (httpStatus as any)[statusCode];
     error = new ApiError(statusCode, message as string, false, err.stack);
   }

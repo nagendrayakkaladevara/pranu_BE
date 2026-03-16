@@ -1,4 +1,3 @@
-
 import httpStatus from 'http-status';
 import Quiz, { QuizStatus } from '../models/quiz.model';
 import Question from '../models/question.model';
@@ -41,10 +40,7 @@ const queryQuizzes = async (filter: any, options: any) => {
     sort = (order === 'desc' ? '-' : '') + field;
   }
 
-  const quizzesDocs = await Quiz.find(where)
-    .sort(sort)
-    .skip(skip)
-    .limit(limit);
+  const quizzesDocs = await Quiz.find(where).sort(sort).skip(skip).limit(limit);
 
   const totalResults = await Quiz.countDocuments(where);
   const totalPages = Math.ceil(totalResults / limit);
@@ -69,9 +65,7 @@ const queryQuizzes = async (filter: any, options: any) => {
  * @returns {Promise<Quiz>}
  */
 const getQuizById = async (id: string) => {
-  const quiz = await Quiz.findById(id)
-    .populate('questions')
-    .populate('assignedClasses');
+  const quiz = await Quiz.findById(id).populate('questions').populate('assignedClasses');
 
   if (!quiz) return null;
 
@@ -136,10 +130,7 @@ const addQuestionsToQuiz = async (quizId: string, questionIds: string[]) => {
     throw new ApiError(httpStatus.BAD_REQUEST, 'One or more questions not found');
   }
 
-  await Quiz.updateOne(
-    { _id: quizId },
-    { $addToSet: { questions: { $each: questionIds } } }
-  );
+  await Quiz.updateOne({ _id: quizId }, { $addToSet: { questions: { $each: questionIds } } });
 
   return getQuizById(quizId);
 };
@@ -159,7 +150,7 @@ const publishQuiz = async (quizId: string, classIds: string[]) => {
   if (!quiz.startTime || !quiz.endTime) {
     throw new ApiError(
       httpStatus.BAD_REQUEST,
-      'Quiz must have start and end times before publishing'
+      'Quiz must have start and end times before publishing',
     );
   }
 
@@ -178,7 +169,7 @@ const publishQuiz = async (quizId: string, classIds: string[]) => {
     {
       $set: { status: QuizStatus.PUBLISHED },
       $addToSet: { assignedClasses: { $each: classIds } },
-    }
+    },
   );
 
   return getQuizById(quizId);

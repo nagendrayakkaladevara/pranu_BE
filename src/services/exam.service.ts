@@ -14,7 +14,9 @@ const expireStaleAttempts = async () => {
   const now = new Date();
 
   // Find all STARTED attempts and check if they should be expired
-  const startedAttempts = await QuizAttempt.find({ status: AttemptStatus.STARTED }).populate('quiz');
+  const startedAttempts = await QuizAttempt.find({ status: AttemptStatus.STARTED }).populate(
+    'quiz',
+  );
 
   for (const attempt of startedAttempts) {
     const quiz = attempt.quiz as any;
@@ -103,6 +105,7 @@ const startAttempt = async (quizId: string, studentId: string) => {
     text: q.text,
     type: q.type,
     marks: q.marks,
+    multipleCorrect: q.type === QuestionType.MCQ ? (q.multipleCorrect ?? false) : undefined,
     options:
       q.type === QuestionType.MCQ
         ? q.options.map((opt: any) => ({
@@ -147,16 +150,51 @@ const submitAttempt = async (attemptId: string, studentId: string, responses: an
     if (!question) continue;
 
     if (question.type === QuestionType.MCQ) {
-      const selectedOption = question.options.find(
-        (o: any) => o._id.toString() === resp.selectedOptionId?.toString()
-      );
-      const isCorrect = selectedOption && (selectedOption as any).isCorrect;
+      const multipleCorrect = question.multipleCorrect ?? false;
+      let isCorrect: boolean;
+
+      if (multipleCorrect) {
+        const selectedIds = (resp.selectedOptionIds || []).map((id: any) => id?.toString?.() ?? id);
+        const correctIds = question.options
+          .filter((o: any) => o.isCorrect)
+          .map((o: any) => o._id.toString());
+        const selectedSet = new Set(selectedIds);
+        const correctSet = new Set(correctIds);
+        isCorrect =
+          selectedSet.size === correctSet.size &&
+          [...selectedSet].every((id) => correctSet.has(id));
+      } else {
+        const selectedOption = question.options.find(
+          (o: any) => o._id.toString() === resp.selectedOptionId?.toString(),
+        );
+        isCorrect = !!(selectedOption && (selectedOption as any).isCorrect);
+      }
+
       if (isCorrect) {
         mcqScore += question.marks;
       }
       responseData.push({
         questionId: resp.questionId,
         selectedOptionId: resp.selectedOptionId,
+        selectedOptionIds: resp.selectedOptionIds,
+        isGraded: true,
+        awardedMarks: isCorrect ? question.marks : 0,
+      });
+    } else if (question.type === QuestionType.FILL_IN_BLANK) {
+      const studentAnswer = (resp.textAnswer ?? '').trim();
+      const correctAnswers = (question.correctAnswers || []).map((a: string) => String(a).trim());
+      const isCorrect =
+        studentAnswer.length > 0 &&
+        correctAnswers.some(
+          (correct: string) => studentAnswer.toLowerCase() === correct.toLowerCase(),
+        );
+
+      if (isCorrect) {
+        mcqScore += question.marks;
+      }
+      responseData.push({
+        questionId: resp.questionId,
+        textAnswer: resp.textAnswer || '',
         isGraded: true,
         awardedMarks: isCorrect ? question.marks : 0,
       });
@@ -187,7 +225,10 @@ const submitAttempt = async (attemptId: string, studentId: string, responses: an
   };
 };
 
-const gradeAttempt = async (attemptId: string, grades: { questionId: string; awardedMarks: number }[]) => {
+const gradeAttempt = async (
+  attemptId: string,
+  grades: { questionId: string; awardedMarks: number }[],
+) => {
   const attempt = await QuizAttempt.findById(attemptId).populate('quiz');
   if (!attempt) {
     throw new ApiError(httpStatus.NOT_FOUND, 'Attempt not found');
@@ -201,10 +242,13 @@ const gradeAttempt = async (attemptId: string, grades: { questionId: string; awa
 
   for (const grade of grades) {
     const response = attempt.responses.find(
-      (r) => r.questionId.toString() === grade.questionId.toString()
+      (r) => r.questionId.toString() === grade.questionId.toString(),
     );
     if (!response) {
-      throw new ApiError(httpStatus.BAD_REQUEST, `Response for question ${grade.questionId} not found`);
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        `Response for question ${grade.questionId} not found`,
+      );
     }
 
     const question = await Question.findById(grade.questionId);
@@ -215,7 +259,7 @@ const gradeAttempt = async (attemptId: string, grades: { questionId: string; awa
     if (grade.awardedMarks > question.marks) {
       throw new ApiError(
         httpStatus.BAD_REQUEST,
-        `Awarded marks (${grade.awardedMarks}) cannot exceed question marks (${question.marks})`
+        `Awarded marks (${grade.awardedMarks}) cannot exceed question marks (${question.marks})`,
       );
     }
 
@@ -299,9 +343,7 @@ const getMyStats = async (studentId: string) => {
   const totalAttempts = attempts.length;
   const averagePercentage =
     totalAttempts > 0
-      ? parseFloat(
-          (attempts.reduce((acc, a) => acc + a.percentage, 0) / totalAttempts).toFixed(2),
-        )
+      ? parseFloat((attempts.reduce((acc, a) => acc + a.percentage, 0) / totalAttempts).toFixed(2))
       : 0;
 
   return {
@@ -324,7 +366,7 @@ const queryAttempts = async (
   filter: { quizId?: string; studentId?: string; status?: string },
   options: { page?: number; limit?: number; sortBy?: string },
   userId: string,
-  userRole: string
+  userRole: string,
 ) => {
   const where: any = {};
 

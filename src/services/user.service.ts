@@ -1,4 +1,3 @@
-
 import httpStatus from 'http-status';
 import User from '../models/user.model';
 import { ApiError } from '../middlewares/error';
@@ -66,11 +65,7 @@ const queryUsers = async (filter: any, options: any) => {
     sort = '-createdAt';
   }
 
-  const users = await User.find(where)
-    .sort(sort)
-    .skip(skip)
-    .limit(limit)
-    .select('-password');
+  const users = await User.find(where).sort(sort).skip(skip).limit(limit).select('-password');
 
   const totalResults = await User.countDocuments(where);
   const totalPages = Math.ceil(totalResults / limit);

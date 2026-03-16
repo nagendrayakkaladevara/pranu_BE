@@ -36,8 +36,27 @@ const refreshAuth = async (refreshToken: string) => {
   return { user, tokens };
 };
 
+const changePassword = async (userId: string, currentPassword: string, newPassword: string) => {
+  const user = await userService.getUserById(userId);
+  if (!user) {
+    throw new ApiError(httpStatus.UNAUTHORIZED, 'User not found');
+  }
+  if (user.isDeleted) {
+    throw new ApiError(httpStatus.UNAUTHORIZED, 'Account is deactivated');
+  }
+  if (!user.password) {
+    throw new ApiError(httpStatus.BAD_REQUEST, 'Password change not supported for this account');
+  }
+  const isMatch = await user.isPasswordMatch(currentPassword);
+  if (!isMatch) {
+    throw new ApiError(httpStatus.UNAUTHORIZED, 'Current password is incorrect');
+  }
+  await userService.updateUserById(userId, { password: newPassword });
+};
+
 export default {
   loginUserWithEmailAndPassword,
   logout,
   refreshAuth,
+  changePassword,
 };

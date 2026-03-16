@@ -77,10 +77,7 @@ const deleteQuiz = catchAsync(async (req: Request, res: Response) => {
  * @param res Response object to send updated quiz
  */
 const addQuestions = catchAsync(async (req: Request, res: Response) => {
-  const result = await quizService.addQuestionsToQuiz(
-    req.params.quizId,
-    req.body.questionIds,
-  );
+  const result = await quizService.addQuestionsToQuiz(req.params.quizId, req.body.questionIds);
   res.send(result);
 });
 

@@ -22,6 +22,7 @@ Educational platform backend (Express + TypeScript + MongoDB/Mongoose). Three us
 **Request flow:** Route → validate middleware (Zod) → auth middleware (JWT + RBAC) → Controller (catchAsync wrapper) → Service → Mongoose Model → MongoDB
 
 **Key layers:**
+
 - `src/routes/v1/*.route.ts` — Define endpoints, apply `auth(...roles)` and `validate(schema)` middleware
 - `src/controllers/` — Thin handlers that extract request data, call services, send responses
 - `src/services/` — All business logic and database operations; throw `ApiError` for errors
@@ -37,6 +38,7 @@ Educational platform backend (Express + TypeScript + MongoDB/Mongoose). Three us
 ## Environment
 
 Requires Node.js >=18. Config loaded via `src/config/config.ts` using Zod-validated env vars:
+
 - `PORT` (default 3000)
 - `DATABASE_URL` (MongoDB connection string)
 - `JWT_SECRET`

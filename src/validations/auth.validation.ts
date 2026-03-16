@@ -36,10 +36,23 @@ const updateMe = {
   }),
 };
 
+const changePassword = {
+  body: z
+    .object({
+      currentPassword: z.string({ required_error: 'Current password is required' }),
+      newPassword: z.string().min(8, 'New password must be at least 8 characters'),
+    })
+    .refine((data) => data.currentPassword !== data.newPassword, {
+      message: 'New password must be different from current password',
+      path: ['newPassword'],
+    }),
+};
+
 export default {
   register,
   login,
   logout,
   refreshTokens,
   updateMe,
+  changePassword,
 };

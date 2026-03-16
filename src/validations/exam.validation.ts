@@ -15,6 +15,7 @@ const submitAttempt = {
       z.object({
         questionId: z.string(),
         selectedOptionId: z.string().optional(),
+        selectedOptionIds: z.array(z.string()).optional(),
         textAnswer: z.string().optional(),
       }),
     ),

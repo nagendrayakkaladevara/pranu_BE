@@ -81,7 +81,9 @@ const getStudentStats = async (studentId: string) => {
       quizTitle: quiz?.title || 'Unknown Quiz',
       score: a.score,
       totalMarks: quiz?.totalMarks || 0,
-      percentage: quiz?.totalMarks ? parseFloat((((a.score || 0) / quiz.totalMarks) * 100).toFixed(2)) : 0,
+      percentage: quiz?.totalMarks
+        ? parseFloat((((a.score || 0) / quiz.totalMarks) * 100).toFixed(2))
+        : 0,
       passed: quiz?.passMarks ? (a.score || 0) >= quiz.passMarks : null,
       date: a.endTime,
     };
@@ -90,9 +92,7 @@ const getStudentStats = async (studentId: string) => {
   const totalAttempts = attempts.length;
   const averagePercentage =
     totalAttempts > 0
-      ? parseFloat(
-          (attempts.reduce((acc, a) => acc + a.percentage, 0) / totalAttempts).toFixed(2)
-        )
+      ? parseFloat((attempts.reduce((acc, a) => acc + a.percentage, 0) / totalAttempts).toFixed(2))
       : 0;
 
   return {
@@ -134,9 +134,7 @@ const getQuestionAnalysis = async (quizId: string) => {
     let totalAwarded = 0;
 
     for (const attempt of attempts) {
-      const response = attempt.responses.find(
-        (r) => r.questionId.toString() === q._id.toString()
-      );
+      const response = attempt.responses.find((r) => r.questionId.toString() === q._id.toString());
       if (response) {
         attemptedCount++;
         if (response.isGraded && response.awardedMarks) {
@@ -156,7 +154,8 @@ const getQuestionAnalysis = async (quizId: string) => {
       marks: q.marks,
       attemptedCount,
       correctCount,
-      correctRate: attemptedCount > 0 ? parseFloat(((correctCount / attemptedCount) * 100).toFixed(2)) : 0,
+      correctRate:
+        attemptedCount > 0 ? parseFloat(((correctCount / attemptedCount) * 100).toFixed(2)) : 0,
       averageMarks: attemptedCount > 0 ? parseFloat((totalAwarded / attemptedCount).toFixed(2)) : 0,
     };
   });
@@ -182,20 +181,27 @@ const getDifficultyAnalysis = async (quizId: string) => {
   const totalAttempts = attempts.length;
   const questions = quiz.questions as any[];
 
-  const difficultyMap: Record<string, { total: number; correct: number; attempted: number; totalMarks: number; awardedMarks: number }> = {};
+  const difficultyMap: Record<
+    string,
+    { total: number; correct: number; attempted: number; totalMarks: number; awardedMarks: number }
+  > = {};
 
   for (const q of questions) {
     const difficulty = q.difficulty || 'MEDIUM';
     if (!difficultyMap[difficulty]) {
-      difficultyMap[difficulty] = { total: 0, correct: 0, attempted: 0, totalMarks: 0, awardedMarks: 0 };
+      difficultyMap[difficulty] = {
+        total: 0,
+        correct: 0,
+        attempted: 0,
+        totalMarks: 0,
+        awardedMarks: 0,
+      };
     }
     difficultyMap[difficulty].total++;
     difficultyMap[difficulty].totalMarks += q.marks;
 
     for (const attempt of attempts) {
-      const response = attempt.responses.find(
-        (r) => r.questionId.toString() === q._id.toString()
-      );
+      const response = attempt.responses.find((r) => r.questionId.toString() === q._id.toString());
       if (response) {
         difficultyMap[difficulty].attempted++;
         if (response.isGraded && response.awardedMarks) {
@@ -212,8 +218,10 @@ const getDifficultyAnalysis = async (quizId: string) => {
     difficulty,
     questionCount: data.total,
     totalMarks: data.totalMarks,
-    correctRate: data.attempted > 0 ? parseFloat(((data.correct / data.attempted) * 100).toFixed(2)) : 0,
-    averageScore: data.attempted > 0 ? parseFloat((data.awardedMarks / data.attempted).toFixed(2)) : 0,
+    correctRate:
+      data.attempted > 0 ? parseFloat(((data.correct / data.attempted) * 100).toFixed(2)) : 0,
+    averageScore:
+      data.attempted > 0 ? parseFloat((data.awardedMarks / data.attempted).toFixed(2)) : 0,
   }));
 
   return {

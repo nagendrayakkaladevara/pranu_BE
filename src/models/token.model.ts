@@ -43,7 +43,7 @@ const tokenSchema = new Schema<IToken>(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 tokenSchema.set('toJSON', {

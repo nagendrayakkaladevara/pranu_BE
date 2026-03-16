@@ -14,7 +14,11 @@ const startAttempt = catchAsync(async (req: Request, res: Response) => {
 });
 
 const submitAttempt = catchAsync(async (req: Request, res: Response) => {
-  const result = await examService.submitAttempt(req.params.attemptId, req.user.id, req.body.responses);
+  const result = await examService.submitAttempt(
+    req.params.attemptId,
+    req.user.id,
+    req.body.responses,
+  );
   res.send(result);
 });
 

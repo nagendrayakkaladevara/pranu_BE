@@ -1,4 +1,3 @@
-
 import httpStatus from 'http-status';
 import Class from '../models/class.model';
 import User from '../models/user.model';
@@ -35,10 +34,7 @@ const queryClasses = async (filter: any, options: any) => {
     sort = (order === 'desc' ? '-' : '') + field;
   }
 
-  const classesDocs = await Class.find(where)
-    .sort(sort)
-    .skip(skip)
-    .limit(limit);
+  const classesDocs = await Class.find(where).sort(sort).skip(skip).limit(limit);
 
   const totalResults = await Class.countDocuments(where);
   const totalPages = Math.ceil(totalResults / limit);
@@ -124,10 +120,7 @@ const assignStudentsToClass = async (classId: string, studentIds: string[]) => {
   }
 
   // Add using $addToSet to avoid duplicates
-  await Class.updateOne(
-    { _id: classId },
-    { $addToSet: { students: { $each: studentIds } } }
-  );
+  await Class.updateOne({ _id: classId }, { $addToSet: { students: { $each: studentIds } } });
 
   return getClassById(classId);
 };
@@ -147,10 +140,7 @@ const assignLecturersToClass = async (classId: string, lecturerIds: string[]) =>
     throw new ApiError(httpStatus.BAD_REQUEST, 'One or more user IDs are invalid or not lecturers');
   }
 
-  await Class.updateOne(
-    { _id: classId },
-    { $addToSet: { lecturers: { $each: lecturerIds } } }
-  );
+  await Class.updateOne({ _id: classId }, { $addToSet: { lecturers: { $each: lecturerIds } } });
 
   return getClassById(classId);
 };

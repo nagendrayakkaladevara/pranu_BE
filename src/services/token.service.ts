@@ -6,7 +6,12 @@ import Token, { TokenType } from '../models/token.model';
 import { IUser } from '../models/user.model';
 import { ApiError } from '../middlewares/error';
 
-const generateToken = (userId: string, expires: moment.Moment, type: string, secret = config.jwt.secret) => {
+const generateToken = (
+  userId: string,
+  expires: moment.Moment,
+  type: string,
+  secret = config.jwt.secret,
+) => {
   const payload = {
     sub: userId,
     iat: moment().unix(),
@@ -16,7 +21,12 @@ const generateToken = (userId: string, expires: moment.Moment, type: string, sec
   return jwt.sign(payload, secret);
 };
 
-const saveToken = async (token: string, userId: string, expires: moment.Moment, type: TokenType) => {
+const saveToken = async (
+  token: string,
+  userId: string,
+  expires: moment.Moment,
+  type: TokenType,
+) => {
   const tokenDoc = await Token.create({
     token,
     user: userId,
