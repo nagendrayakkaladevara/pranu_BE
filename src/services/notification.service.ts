@@ -43,8 +43,8 @@ const createBulkNotifications = async (
   if (userIds.length === 0) return [];
 
   const uniqueIds = [...new Set(userIds.map((id) => id.toString()))];
-  const docs = uniqueIds.map((userId) => ({
-    userId,
+  const docs = uniqueIds.map((id) => ({
+    userId: new mongoose.Types.ObjectId(id),
     type,
     title,
     message,
