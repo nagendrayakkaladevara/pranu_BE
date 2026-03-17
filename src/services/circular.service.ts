@@ -46,7 +46,6 @@ const queryCirculars = async (filter: any, options: any, userId: string, userRol
   const where: any = {};
 
   if (filter.type) where.type = filter.type;
-  if (filter.targetType) where.targetType = filter.targetType;
   if (filter.targetClassId) where.targetClassId = filter.targetClassId;
   if (filter.targetDepartment)
     where.targetDepartment = { $regex: filter.targetDepartment, $options: 'i' };
@@ -59,11 +58,21 @@ const queryCirculars = async (filter: any, options: any, userId: string, userRol
     const classIds = studentClasses.map((c) => c._id);
     const departments = [...new Set(studentClasses.map((c) => c.department))];
 
-    where.$or = [
-      { targetType: TargetType.ALL },
-      { targetType: TargetType.CLASS, targetClassId: { $in: classIds } },
-      { targetType: TargetType.DEPARTMENT, targetDepartment: { $in: departments } },
-    ];
+    // Build $or branches for visibility; incorporate targetType filter here
+    // so it doesn't conflict with the $or (top-level targetType would AND with $or and break filtering)
+    const orBranches: any[] = [];
+    if (!filter.targetType || filter.targetType === TargetType.ALL) {
+      orBranches.push({ targetType: TargetType.ALL });
+    }
+    if (!filter.targetType || filter.targetType === TargetType.CLASS) {
+      orBranches.push({ targetType: TargetType.CLASS, targetClassId: { $in: classIds } });
+    }
+    if (!filter.targetType || filter.targetType === TargetType.DEPARTMENT) {
+      orBranches.push({ targetType: TargetType.DEPARTMENT, targetDepartment: { $in: departments } });
+    }
+    where.$or = orBranches;
+  } else if (filter.targetType) {
+    where.targetType = filter.targetType;
   }
 
   // Lecturers see their own + all (or filter by their classes)

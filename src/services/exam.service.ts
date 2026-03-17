@@ -53,16 +53,62 @@ const listAvailableQuizzes = async (studentId: string) => {
 
   const now = new Date();
 
+  // Fetch all published quizzes assigned to student's classes that haven't ended
   const quizzes = await Quiz.find({
     status: QuizStatus.PUBLISHED,
     assignedClasses: { $in: classIds },
-    $and: [
-      { $or: [{ startTime: { $lte: now } }, { startTime: null }] },
-      { $or: [{ endTime: { $gte: now } }, { endTime: null }] },
-    ],
-  });
+    $or: [{ endTime: { $gte: now } }, { endTime: null }],
+  })
+    .populate('createdBy', 'name email')
+    .sort({ startTime: 1 });
 
-  return quizzes;
+  // Get submitted attempts for this student (for these quizzes)
+  const quizIds = quizzes.map((q) => q._id);
+  const submittedAttempts = await QuizAttempt.find({
+    quiz: { $in: quizIds },
+    student: studentId,
+    status: AttemptStatus.SUBMITTED,
+  })
+    .select('quiz score')
+    .lean();
+
+  const submittedByQuizId = new Map<string, { attemptId: string; score: number }>();
+  for (const a of submittedAttempts) {
+    const quizId = (a.quiz as any).toString();
+    submittedByQuizId.set(quizId, {
+      attemptId: (a as any)._id.toString(),
+      score: a.score ?? 0,
+    });
+  }
+
+  const active: any[] = [];
+  const upcoming: any[] = [];
+  const completed: any[] = [];
+
+  for (const quiz of quizzes) {
+    const quizId = quiz._id.toString();
+    const submitted = submittedByQuizId.get(quizId);
+
+    if (submitted) {
+      // Student has submitted — show in completed section
+      const obj = quiz.toJSON();
+      completed.push({
+        ...obj,
+        attemptId: submitted.attemptId,
+        score: submitted.score,
+        totalMarks: quiz.totalMarks,
+      });
+    } else {
+      const obj = quiz.toJSON();
+      if (!quiz.startTime || quiz.startTime <= now) {
+        active.push(obj);
+      } else {
+        upcoming.push(obj);
+      }
+    }
+  }
+
+  return { active, upcoming, completed };
 };
 
 const startAttempt = async (quizId: string, studentId: string) => {

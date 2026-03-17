@@ -163,7 +163,9 @@ api.interceptors.response.use(
 **Step 1: List Available Quizzes**
 
 - `GET /exam/quizzes`
-- Returns published quizzes assigned to the student's class and within the active time window.
+- Returns `{ active, upcoming }`: published quizzes assigned to the student's classes.
+  - **active**: Quizzes that have started and not ended — student can start now.
+  - **upcoming**: Quizzes that have not started yet — use `startTime` for countdown display (e.g. "Starts in 2 days, 5 hours").
 
 **Step 2: Start Attempt**
 

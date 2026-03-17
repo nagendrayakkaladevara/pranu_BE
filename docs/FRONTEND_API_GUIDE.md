@@ -799,11 +799,83 @@ All endpoints require auth with `STUDENT` role.
 
 ### GET /v1/exam/quizzes
 
-List quizzes available for the logged-in student. Returns published quizzes assigned to the student's enrolled classes and within the active time window.
+List quizzes available for the logged-in student. Returns published quizzes assigned to the student's enrolled classes, split into **active** (can start now), **upcoming** (starts in the future), and **completed** (already submitted).
 
 > **Note:** Stale attempts (where the quiz `endTime` has passed or the attempt duration has exceeded the quiz `durationMinutes`) are automatically expired when listing quizzes.
 
-**Response** `200`: Array of quiz objects.
+**Response** `200`:
+
+```json
+{
+  "active": [
+    {
+      "id": "665a...",
+      "title": "Math Quiz",
+      "description": "...",
+      "durationMinutes": 30,
+      "totalMarks": 10,
+      "passMarks": 6,
+      "startTime": "2026-03-01T09:00:00.000Z",
+      "endTime": "2026-03-01T11:00:00.000Z",
+      "createdBy": { "id": "...", "name": "Dr. Smith", "email": "smith@example.com" },
+      "createdAt": "...",
+      "updatedAt": "..."
+    }
+  ],
+  "upcoming": [
+    {
+      "id": "665b...",
+      "title": "Physics Exam",
+      "description": "...",
+      "durationMinutes": 60,
+      "totalMarks": 20,
+      "passMarks": 12,
+      "startTime": "2026-03-15T10:00:00.000Z",
+      "endTime": "2026-03-15T12:00:00.000Z",
+      "createdBy": { "id": "...", "name": "Dr. Jones", "email": "jones@example.com" },
+      "createdAt": "...",
+      "updatedAt": "..."
+    }
+  ],
+  "completed": [
+    {
+      "id": "665c...",
+      "title": "Chemistry Quiz",
+      "description": "...",
+      "durationMinutes": 20,
+      "totalMarks": 15,
+      "passMarks": 9,
+      "startTime": "2026-03-10T09:00:00.000Z",
+      "endTime": "2026-03-10T10:00:00.000Z",
+      "createdBy": { "id": "...", "name": "Dr. Brown", "email": "brown@example.com" },
+      "attemptId": "665d...",
+      "score": 12,
+      "totalMarks": 15
+    }
+  ]
+}
+```
+
+| Field       | Type  | Description                                                                 |
+| :---------- | :---- | :-------------------------------------------------------------------------- |
+| `active`    | array | Quizzes that have started and not ended — student can start an attempt now  |
+| `upcoming`  | array | Quizzes that have not started yet — use `startTime` for countdown display   |
+| `completed` | array | Quizzes the student has submitted — includes `attemptId`, `score`; show "View Results" |
+
+**Countdown for upcoming quizzes:** Use `startTime` (ISO 8601) to compute time until the quiz starts. Example:
+
+```javascript
+// Countdown until quiz starts
+const startTime = new Date(quiz.startTime);
+const now = new Date();
+const msUntilStart = startTime - now;
+if (msUntilStart > 0) {
+  const days = Math.floor(msUntilStart / 86400000);
+  const hours = Math.floor((msUntilStart % 86400000) / 3600000);
+  const minutes = Math.floor((msUntilStart % 3600000) / 60000);
+  // Display: "Starts in 2 days, 5 hours, 30 minutes"
+}
+```
 
 ### POST /v1/exam/quizzes/:quizId/start
 
