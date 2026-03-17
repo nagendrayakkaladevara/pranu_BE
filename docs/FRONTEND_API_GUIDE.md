@@ -18,6 +18,7 @@ Complete API reference for the frontend team. All endpoints are prefixed with `/
 - [Attempts (All Roles)](#attempts-all-roles)
 - [Grading (Lecturer/Admin)](#grading-lectureadmin)
 - [Analytics (Lecturer/Admin)](#analytics-lectureadmin)
+- [Notifications (All Roles)](#notifications-all-roles) — see [NOTIFICATIONS_API_GUIDE.md](NOTIFICATIONS_API_GUIDE.md) for full details
 - [Data Models](#data-models)
 - [Pagination](#pagination)
 - [Rate Limiting](#rate-limiting)
@@ -1272,6 +1273,19 @@ No auth required. Returns `{ "status": "ok", "timestamp": "...", "message": "Ser
 ### GET /v1/health
 
 No auth required. Returns health check with version info.
+
+---
+
+## Notifications (All Roles)
+
+Notifications are created automatically when circulars are published, quizzes are assigned, attempts are graded, or students are enrolled in classes. All authenticated users can list and manage their own notifications.
+
+**See [NOTIFICATIONS_API_GUIDE.md](NOTIFICATIONS_API_GUIDE.md) for the complete API reference**, including:
+
+- `GET /v1/notifications` — List notifications (paginated)
+- `GET /v1/notifications/unread-count` — Unread count for badge
+- `PATCH /v1/notifications/:notificationId/read` — Mark one as read
+- `PATCH /v1/notifications/read-all` — Mark all as read
 
 ---
 

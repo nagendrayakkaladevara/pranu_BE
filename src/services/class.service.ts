@@ -2,6 +2,7 @@ import httpStatus from 'http-status';
 import Class from '../models/class.model';
 import User from '../models/user.model';
 import { ApiError } from '../middlewares/error';
+import notificationService from './notification.service';
 
 /**
  * Create a class
@@ -121,6 +122,10 @@ const assignStudentsToClass = async (classId: string, studentIds: string[]) => {
 
   // Add using $addToSet to avoid duplicates
   await Class.updateOne({ _id: classId }, { $addToSet: { students: { $each: studentIds } } });
+
+  notificationService.notifyClassEnrolled(classId, classDoc.name, studentIds).catch((err) => {
+    console.error('Notification failed for class enrollment:', err);
+  });
 
   return getClassById(classId);
 };

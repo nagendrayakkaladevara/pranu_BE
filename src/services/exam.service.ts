@@ -6,6 +6,7 @@ import QuizAttempt, { AttemptStatus } from '../models/attempt.model';
 import Question, { QuestionType } from '../models/question.model';
 import User from '../models/user.model';
 import { ApiError } from '../middlewares/error';
+import notificationService from './notification.service';
 
 /**
  * Expire stale attempts where quiz endTime has passed or duration has been exceeded
@@ -273,6 +274,22 @@ const gradeAttempt = async (
   await attempt.save();
 
   const allGraded = attempt.responses.every((r) => r.isGraded);
+
+  if (allGraded) {
+    const quiz = attempt.quiz as any;
+    const studentId = attempt.student.toString();
+    notificationService
+      .notifyAttemptGraded(
+        attemptId,
+        studentId,
+        quiz?.title || 'Quiz',
+        attempt.score || 0,
+        quiz?.totalMarks || 0,
+      )
+      .catch((err) => {
+        console.error('Notification failed for attempt graded:', err);
+      });
+  }
 
   return {
     message: allGraded ? 'All responses graded' : 'Partial grading saved',

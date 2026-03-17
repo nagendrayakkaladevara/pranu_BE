@@ -4,6 +4,7 @@ import Question from '../models/question.model';
 import Class from '../models/class.model';
 import { IUser } from '../models/user.model';
 import { ApiError } from '../middlewares/error';
+import notificationService from './notification.service';
 
 /**
  * Create a quiz
@@ -171,6 +172,10 @@ const publishQuiz = async (quizId: string, classIds: string[]) => {
       $addToSet: { assignedClasses: { $each: classIds } },
     },
   );
+
+  notificationService.notifyQuizPublished(quiz.title, quizId, classIds).catch((err) => {
+    console.error('Notification failed for quiz published:', err);
+  });
 
   return getQuizById(quizId);
 };

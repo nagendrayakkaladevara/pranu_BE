@@ -7,6 +7,7 @@ import questionRoute from './v1/question.route';
 import quizRoute from './v1/quiz.route';
 import examRoute from './v1/exam.route';
 import analyticsRoute from './v1/analytics.route';
+import notificationRoute from './v1/notification.route';
 
 const router = express.Router();
 
@@ -27,5 +28,6 @@ router.use('/questions', questionRoute);
 router.use('/quizzes', quizRoute);
 router.use('/exam', examRoute);
 router.use('/analytics', analyticsRoute);
+router.use('/notifications', notificationRoute);
 
 export default router;

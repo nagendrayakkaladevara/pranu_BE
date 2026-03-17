@@ -3,6 +3,7 @@ import Circular from '../models/circular.model';
 import Class from '../models/class.model';
 import { ApiError } from '../middlewares/error';
 import { CircularType, TargetType } from '../models/circular.model';
+import notificationService from './notification.service';
 
 /**
  * Create a circular/notice/announcement
@@ -14,7 +15,10 @@ const createCircular = async (circularBody: any, lecturerId: string) => {
   const body = { ...circularBody, publishedBy: lecturerId };
 
   if (body.targetType === TargetType.CLASS && !body.targetClassId) {
-    throw new ApiError(httpStatus.BAD_REQUEST, 'targetClassId is required when targetType is CLASS');
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      'targetClassId is required when targetType is CLASS',
+    );
   }
   if (body.targetType === TargetType.DEPARTMENT && !body.targetDepartment) {
     throw new ApiError(
@@ -23,7 +27,11 @@ const createCircular = async (circularBody: any, lecturerId: string) => {
     );
   }
 
-  return Circular.create(body);
+  const circular = await Circular.create(body);
+  notificationService.notifyCircularCreated(circular).catch((err) => {
+    console.error('Notification failed for circular created:', err);
+  });
+  return circular;
 };
 
 /**
@@ -40,7 +48,8 @@ const queryCirculars = async (filter: any, options: any, userId: string, userRol
   if (filter.type) where.type = filter.type;
   if (filter.targetType) where.targetType = filter.targetType;
   if (filter.targetClassId) where.targetClassId = filter.targetClassId;
-  if (filter.targetDepartment) where.targetDepartment = { $regex: filter.targetDepartment, $options: 'i' };
+  if (filter.targetDepartment)
+    where.targetDepartment = { $regex: filter.targetDepartment, $options: 'i' };
   if (filter.priority) where.priority = filter.priority;
   if (filter.isPinned !== undefined) where.isPinned = filter.isPinned;
 
@@ -129,11 +138,7 @@ const getCircularById = async (circularId: string, userId: string, userRole: str
  * @param lecturerId - ID of the lecturer making the request
  * @returns Updated circular
  */
-const updateCircularById = async (
-  circularId: string,
-  updateBody: any,
-  lecturerId: string,
-) => {
+const updateCircularById = async (circularId: string, updateBody: any, lecturerId: string) => {
   const circular = await Circular.findById(circularId);
   if (!circular) {
     throw new ApiError(httpStatus.NOT_FOUND, 'Circular not found');

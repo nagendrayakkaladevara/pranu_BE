@@ -28,7 +28,9 @@ const createCircular = {
 
 const getCirculars = {
   query: z.object({
-    type: z.enum([CircularType.CIRCULAR, CircularType.NOTICE, CircularType.ANNOUNCEMENT]).optional(),
+    type: z
+      .enum([CircularType.CIRCULAR, CircularType.NOTICE, CircularType.ANNOUNCEMENT])
+      .optional(),
     targetType: z.enum([TargetType.CLASS, TargetType.DEPARTMENT, TargetType.ALL]).optional(),
     targetClassId: z.string().optional(),
     targetDepartment: z.string().optional(),
@@ -53,7 +55,9 @@ const updateCircular = {
   }),
   body: z
     .object({
-      type: z.enum([CircularType.CIRCULAR, CircularType.NOTICE, CircularType.ANNOUNCEMENT]).optional(),
+      type: z
+        .enum([CircularType.CIRCULAR, CircularType.NOTICE, CircularType.ANNOUNCEMENT])
+        .optional(),
       title: z.string().min(1).max(200).optional(),
       content: z.string().min(1).optional(),
       targetType: z.enum([TargetType.CLASS, TargetType.DEPARTMENT, TargetType.ALL]).optional(),
