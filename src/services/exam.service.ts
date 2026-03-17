@@ -53,16 +53,29 @@ const listAvailableQuizzes = async (studentId: string) => {
 
   const now = new Date();
 
-  // Fetch all published quizzes assigned to student's classes that haven't ended
+  // Fetch published quizzes that have started (or no startTime) and haven't ended
   const quizzes = await Quiz.find({
     status: QuizStatus.PUBLISHED,
     assignedClasses: { $in: classIds },
+    $and: [
+      { $or: [{ startTime: { $lte: now } }, { startTime: null }] },
+      { $or: [{ endTime: { $gte: now } }, { endTime: null }] },
+    ],
+  })
+    .populate('createdBy', 'name email')
+    .sort({ startTime: 1 });
+
+  // Fetch upcoming quizzes (not yet started, not yet ended)
+  const upcomingQuizzes = await Quiz.find({
+    status: QuizStatus.PUBLISHED,
+    assignedClasses: { $in: classIds },
+    startTime: { $gt: now },
     $or: [{ endTime: { $gte: now } }, { endTime: null }],
   })
     .populate('createdBy', 'name email')
     .sort({ startTime: 1 });
 
-  // Get submitted attempts for this student (for these quizzes)
+  // Get submitted attempts for this student (for active/completed quizzes)
   const quizIds = quizzes.map((q) => q._id);
   const submittedAttempts = await QuizAttempt.find({
     quiz: { $in: quizIds },
@@ -99,13 +112,14 @@ const listAvailableQuizzes = async (studentId: string) => {
         totalMarks: quiz.totalMarks,
       });
     } else {
-      const obj = quiz.toJSON();
-      if (!quiz.startTime || quiz.startTime <= now) {
-        active.push(obj);
-      } else {
-        upcoming.push(obj);
-      }
+      // Quiz has started and not submitted — active
+      active.push(quiz.toJSON());
     }
+  }
+
+  // Add upcoming quizzes (not yet started)
+  for (const quiz of upcomingQuizzes) {
+    upcoming.push(quiz.toJSON());
   }
 
   return { active, upcoming, completed };

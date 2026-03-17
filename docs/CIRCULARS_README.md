@@ -6,6 +6,35 @@ Lecturers can publish circulars, notices, and announcements to students. Student
 
 ---
 
+## How It Works
+
+### Flow
+
+1. **Lecturer creates** a circular with a type (`CIRCULAR`, `NOTICE`, `ANNOUNCEMENT`), content, and target audience.
+2. **Target audience** is set via `targetType`:
+   - `CLASS` — only students in a specific class
+   - `DEPARTMENT` — all students in a department
+   - `ALL` — every student
+3. **Students** call `GET /v1/circulars` and receive only circulars targeted to their classes, department, or all.
+4. **Lecturers & admins** see all circulars; lecturers can filter with `myOnly=true` to see only their own.
+5. **Pinned** circulars appear first in the list.
+
+### Request Flow (Backend)
+
+```
+Route → validate (Zod) → auth (JWT + RBAC) → Controller → Service → Mongoose Model → MongoDB
+```
+
+### Visibility Rules
+
+| User Role | What They See |
+| :-------- | :------------- |
+| **STUDENT** | Circulars where target = their class(es), department, or ALL |
+| **LECTURER** | All circulars (optionally filtered by `myOnly=true`) |
+| **ADMIN** | All circulars (read-only) |
+
+---
+
 ## Overview
 
 | Concept | Values |
@@ -220,3 +249,15 @@ Students automatically see only circulars targeted to their classes, department,
 ```
 GET /v1/circulars
 ```
+
+---
+
+## Quick Reference
+
+| Action | Method | Endpoint | Auth |
+| :----- | :----- | :------- | :--- |
+| Create | `POST` | `/v1/circulars` | LECTURER |
+| List | `GET` | `/v1/circulars` | All |
+| Get one | `GET` | `/v1/circulars/:circularId` | All |
+| Update | `PATCH` | `/v1/circulars/:circularId` | LECTURER (publisher) |
+| Delete | `DELETE` | `/v1/circulars/:circularId` | LECTURER (publisher) |

@@ -100,7 +100,9 @@ const updateQuestion = {
           if (opts.length > 0 && opts.length < 2) return false;
           const correctCount = opts.filter((o) => o.isCorrect).length;
           const multipleCorrect = data.multipleCorrect;
-          if (multipleCorrect === undefined) return opts.length >= 2;
+          if (multipleCorrect === undefined) {
+            return opts.length >= 2 && correctCount >= 1;
+          }
           if (multipleCorrect) return correctCount >= 1;
           return correctCount === 1;
         }
@@ -117,7 +119,7 @@ const updateQuestion = {
       },
       {
         message:
-          'MCQ: at least 2 options; single correct: exactly one option must be correct. FILL_IN_BLANK: at least one non-empty correctAnswer.',
+          'MCQ: at least 2 options; at least one option must be correct (exactly one for single-correct, at least one for multiple-correct). FILL_IN_BLANK: at least one non-empty correctAnswer.',
       },
     ),
 };
